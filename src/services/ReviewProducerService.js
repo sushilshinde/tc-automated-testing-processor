@@ -25,35 +25,23 @@ class ReviewProducerService {
    * @param {String} reviewerId Reviewer Id, GUID
    * @param {String} reviewTypeId Review type Id, GUID
    * @param {Number} score Score value in percent from 0 to 100
-   * @param {Object} testPhase Test meta-data
+   * @param {String} status One of 'completed' or 'queued'
+   * @param {Object} metadata Test meta-data
    * @returns Response object returned from 'createReview' API
    */
   async generateReview (token, submissionId, reviewerId, reviewTypeId, score, status, metadata) {
-    if (metadata.testType === 'system') {
-      return (await helper
-        .getApi(token)
-        .post('/reviewSummations')
-        .send({
-          submissionId,
-          scoreCardId: this.config.REVIEW_SCORECARD_ID,
-          aggregateScore: score,
-          metadata,
-          isPassing: true
-        })).body
-    } else {
-      return (await helper
-        .getApi(token)
-        .post('/reviews')
-        .send({
-          submissionId,
-          scoreCardId: this.config.REVIEW_SCORECARD_ID,
-          reviewerId,
-          metadata,
-          typeId: reviewTypeId,
-          score,
-          status
-        })).body
-    }
+    return (await helper
+      .getApi(token)
+      .post('/reviews')
+      .send({
+        submissionId,
+        scoreCardId: this.config.REVIEW_SCORECARD_ID,
+        reviewerId,
+        metadata,
+        typeId: reviewTypeId,
+        score,
+        status
+      })).body
   }
 
   async generateUpdate (token, submissionId, reviewId, reviewerId, typeId, scoreCardId, score, status, metadata) {
@@ -61,12 +49,12 @@ class ReviewProducerService {
       .getApi(token)
       .put(`/reviews/${reviewId}`)
       .send({
-        score,
-        metadata,
         submissionId,
-        reviewerId,
         scoreCardId,
+        reviewerId,
+        metadata,
         typeId,
+        score,
         status
       })).body
   }
@@ -75,9 +63,12 @@ class ReviewProducerService {
    * Main function of the service. Creates review from the score provided by Scorer
    * and creates new review record.
    * @param {String} submissionId Submission Id, GUID
-   * @param {Object} reivewObject Review Object
    * @param {Number} score Score from the scorer
-   * @param {Object} testPhase Metadata if any from the scorer
+   * @param {Object} reviewObject Review Object
+   * @param {String} status One of 'completed' or 'queued'
+   * @param {Object} metadata Any metadata to be stored along with the review
+   * @param {Object} reviewObject An existing review, which would result in the review getting updated
+   * instead of a new review being created
    */
   async createReview (submissionId, score, status, metadata, reviewObject) {
     const token = await helper.getM2Mtoken()

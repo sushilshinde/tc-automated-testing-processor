@@ -33,8 +33,8 @@ async function getM2Mtoken () {
 
 /**
  * Attempts to download a zip file and unzip it
- * @param {String} submissionId Submissio ID
- * @returns {Promise}
+ * @param {String} submissionId Submission Id
+ * @returns {String} the path where the submission was downloaded to
  */
 async function downloadAndUnzipFile (submissionId) {
   const subPath = path.join(__dirname, '../../submissions', submissionId)
@@ -159,8 +159,7 @@ async function postError (error, submissionDetails = {}) {
 }
 
 /**
- * Takes a kafka message payload and assuming it is a submission
- * gets the submission object
+ * Takes a submission id and gets the submission object
  * @param {Object} submissionId The id of submission
  */
 async function getSubmission (submissionId) {
@@ -192,6 +191,7 @@ async function zipAndUploadArtifact (
   let archive = archiver.create('zip', {})
   const token = await getM2Mtoken()
 
+  // TODO - Update path as needed
   if (fs.existsSync(`${filePath}/submission/artifacts/public`)) {
     const publicArtifact = fs.createWriteStream(
       `${filePath}/${submissionId}-${testPhase}.zip`
@@ -229,6 +229,7 @@ async function zipAndUploadArtifact (
   }
 
   // PRIVATE ARTIFACTS
+  // TODO - Update path as needed
   if (fs.existsSync(`${filePath}/submission/artifacts/private`)) {
     archive = archiver.create('zip', {})
     const privateArtifact = fs.createWriteStream(
@@ -268,12 +269,16 @@ async function prepareMetaData (submissionPath, testPhase) {
   const metadata = {}
   metadata.testType = testPhase
 
+  // TODO - Update location of the result
   if (fs.existsSync(`${submissionPath}/submission/output/public.csv`)) {
     metadata.public = await csv().fromFile(
       `${submissionPath}/submission/output/public.csv`
     )
   }
 
+  // TODO - I am guessing the above code already took care of preparing the meta data
+  // TODO - but just in case, leaving this here for now if we need to store any other type
+  // TODO - of meta data
   if (fs.existsSync(`${submissionPath}/submission/output/private.csv`)) {
     metadata.private = await csv().fromFile(
       `${submissionPath}/submission/output/private.csv`

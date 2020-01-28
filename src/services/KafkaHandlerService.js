@@ -15,6 +15,10 @@ const { performCodeTest } = require('./CodeTesterService')
 const ReviewProducerService = require('./ReviewProducerService')
 const reviewProducer = new ReviewProducerService(config)
 
+const testConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config/phase-config.json')))
+// Only 1 phase for now
+const testPhase = 'system'
+
 /**
  * Handle Kafka message.
  * @param {Object} message the Kafka message in JSON format
@@ -26,20 +30,17 @@ async function handle (message) {
 
   const avScanReviewTypeId = await helper.getReviewTypeId(config.AV_SCAN_REVIEW_NAME)
 
+  // TODO - Get clarity on how the relevant challenge id(s) are to be read
+  // TODO - Is it a group attribute that we need to watch out for or just read from config
   const targetedChallenge = config.CHALLENGE_ID
 
   const resource = _.get(message, 'payload.resource', '')
   const typeId = _.get(message, 'payload.typeId', '')
   const reviewScore = _.get(message, 'payload.score', '')
-  const testPhase = _.get(message, 'payload.testType', 'provisional')
 
-  if (!(resource === 'review' && typeId === avScanReviewTypeId) && !(resource === 'score')) {
+  if (!(resource === 'review' && typeId === avScanReviewTypeId)) {
     logger.info(
-      `Message payload resource or typeId is not of interest, the message is ignored: ${_.get(
-        message,
-        'payload.resource',
-        ''
-      )} / ${_.get(message, 'payload.typeId', '')}`
+      `Message is not an anti virus scan review. Message is thus ignored: ${resource} / ${typeId}`
     )
     return
   }
@@ -50,10 +51,11 @@ async function handle (message) {
   }
 
   // Check if AV scan successful
-  if (resource === 'review' && typeId === avScanReviewTypeId && reviewScore !== 100) {
-    throw new Error(
-      `AV Scan has not succeeded for submission ${submissionId}, score: ${reviewScore}`
+  if (reviewScore !== 100) {
+    logger.info(
+      `Review indicates that submission failed anti virus checks. Message is thus ignored: ${submissionId} / ${reviewScore}`
     )
+    return
   }
 
   try {
@@ -63,20 +65,17 @@ async function handle (message) {
 
     // Extract `challengeId from the submission object
     const challengeId = _.get(submission, 'challengeId')
-    logger.info(`Fetch challengeId from submission ${challengeId}`)
 
     // Check for expected challengeId
+    // TODO - Get clarity on how the relevant challenge id(s) are to be read
+    // TODO - Is it a group attribute that we need to watch out for or just read from config
     if (!challengeId || challengeId !== targetedChallenge) {
       logger.info(`Ignoring message as challengeId - ${challengeId} is not of interest`)
       return
     }
 
     // Create `review` with `status = queued` for the submission
-    if (testPhase !== 'system') {
-      reviewObject = await reviewProducer.createReview(submissionId, null, 'queued', { testType: testPhase })
-    }
-
-    const testConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config/phase-config.json')))
+    reviewObject = await reviewProducer.createReview(submissionId, null, 'queued', { testType: testPhase })
 
     // Download submission
     const submissionPath = await helper.downloadAndUnzipFile(submissionId)
@@ -117,14 +116,10 @@ async function handle (message) {
       throw new Error(`Wrong folder structure detectd, missing "solution" folder for ${submissionId}.`)
     }
 
-    logger.info(`Started executing DATA type of submission for ${submissionId} | ${submissionPath}`)
-    await performDataTest(challengeId, submissionId, submissionPath, testPhase)
-
-    /**
-     * Code block for Non-TCO MMs
-     */
+    // TODO - Update with path of log file
     const resultFile = fs.readFileSync(path.join(`${submissionPath}/submission/artifacts/public`, 'result.txt'), 'utf-8')
     const lines = resultFile.trim().split('\n')
+    // TODO - Update with index of the results in the log
     score = lines.slice(-1)[0]
 
     const metadata = await helper.prepareMetaData(submissionPath, testPhase)
