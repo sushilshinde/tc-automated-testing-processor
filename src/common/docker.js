@@ -1,0 +1,281 @@
+/**
+ * Docker-related operations.
+ */
+
+const fs = require('fs')
+const request = require('request-promise')
+const path = require('path')
+const tar = require('tar')
+
+const logger = require('./logger')
+
+const dockerUrl = 'http://unix:/var/run/docker.sock:'
+
+/**
+ * Build Docker Image by Using the `Dockerfile` from Submission
+ * @param {string} submissionPath
+ * @param {string} submissionId
+ */
+module.exports.buildDockerImage = async (submissionPath, submissionId) => {
+  try {
+    // BUILD DOCKER IMAGE
+    logger.info(`Docker Image Creation Started for ${submissionId}`)
+
+    const files = fs.readdirSync(path.resolve(`${submissionPath}/code`))
+    const codeFolder = path.resolve(`${submissionPath}/code`)
+    const dockerFile = path.resolve(`${submissionPath}/Dockerfile.tar.gz`)
+
+    logger.info('Creating Tar ball of Dockerfile')
+
+    tar.c(
+      {
+        gzip: true,
+        cwd: codeFolder,
+        file: dockerFile,
+        sync: true
+      },
+      files
+    )
+
+    const headerOptions = {
+      headers: {
+        'Content-Type': 'application/tar',
+        host: null
+      },
+      body: fs.createReadStream(path.join(submissionPath, 'Dockerfile.tar.gz')),
+      encoding: null
+    }
+
+    logger.info('Calling Docker API for creating Image')
+    await request
+      .post(
+        dockerUrl + '/build?t=' + submissionId + '&nocache=true&forcerm=true',
+        headerOptions
+      )
+      .then(function (res) {
+        const buffer = Buffer.from(res, 'utf8')
+        fs.writeFileSync(`${submissionPath}/artifacts/public/docker-image-build.log`, buffer)
+        logger.info('Docker Image has been created successfully')
+        return true
+      })
+      .catch(function (err) {
+        throw err
+      })
+  } catch (error) {
+    logger.error(error)
+    throw new Error(`Error while building docker image ${error}`)
+  }
+}
+
+/**
+ * Delete Docker Image
+ * @param {string} imageName
+ */
+module.exports.deleteDockerImage = async imageName => {
+  try {
+    // DELETE DOCKER IMAGE
+    logger.info(`Delete Docker Image - ${imageName}`)
+
+    const headerOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+        host: null
+      }
+    }
+
+    await request
+      .delete(dockerUrl + '/images/' + imageName, headerOptions)
+      .then(function (res) {
+        logger.info(`Docker Image (${imageName}) Deleted Successfully`)
+        return true
+      })
+      .catch(function (err) {
+        throw err
+      })
+  } catch (error) {
+    logger.error(error)
+    throw new Error(`Error while deleting docker image ${error}`)
+  }
+}
+
+/**
+ * Create container using Tester Image and mapping the `prediction` and `ground truth` data
+ * @param {string} submissionPath Path for downloaded submission on host machine
+ * @param {string} submissionId Submission ID
+ * @returns {string} Container ID
+ */
+module.exports.createContainer = async (
+  challengeId,
+  submissionId,
+  imageName,
+  submissionPath,
+  mountPath,
+  testCommand,
+  runner, // solution or tester
+  gpuFlag = 'false'
+) => {
+  try {
+    logger.info(`Docker Container Creation Started for ${submissionId}`)
+
+    const headerOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+        host: null
+      },
+      json: {
+        Image: imageName,
+        HostConfig: {
+          Binds: [eval(mountPath)],
+          NetworkDisabled: true,
+          ReadonlyRootfs: true,
+          VolumesFrom: [`${challengeId}:ro`],
+          ...(gpuFlag === 'true') ? { Gpus: 'all' } : {},
+          LogConfig: {
+            Type: 'awslogs',
+            Config: {
+              'awslogs-region': 'us-east-1',
+              'awslogs-group': '/aws/mm-challenges',
+              'awslogs-stream': `${challengeId}-${submissionId}-${runner}`
+            }
+          }
+        },
+        Cmd: testCommand,
+        Tty: true
+      }
+    }
+
+    return await request
+      .post(
+        dockerUrl + '/containers/create?name=' + submissionId,
+        headerOptions
+      )
+      .then(function (res) {
+        logger.info(
+          `Docker Container (${res.Id}) Creation Completed for ${submissionId}`
+        )
+        return res.Id
+      })
+      .catch(function (err) {
+        throw err
+      })
+  } catch (error) {
+    logger.error(error)
+    throw new Error(`Error while creating docker container ${error}`)
+  }
+}
+
+/**
+ * Execute (Start + Run) testing process inside container to match `prediction` and `ground truth` data
+ * @param {string} containerID
+ * @param {[string]} testingCommand String array of testing command
+ * @returns {number} Score of the submission
+ */
+module.exports.executeSubmission = async (containerID) => {
+  try {
+    // START CONTAINER
+    logger.info(`Starting Docker Container ${containerID}`)
+    await request
+      .post(dockerUrl + '/containers/' + containerID + '/start', {
+        headers: {
+          host: null
+        }
+      })
+      .then(function (res) {
+        logger.info(`Docker Container Started ${containerID}`)
+        return true
+      })
+      .catch(function (err) {
+        throw err
+      })
+
+    await request
+      .post(dockerUrl + '/containers/' + containerID + '/wait', {
+        headers: {
+          host: null
+        }
+      })
+      .then(function (res) {
+        const statusCode = JSON.parse(res).StatusCode
+        if (statusCode === 0) return true
+        else Error(`Execution completed with error code ${statusCode}`)
+      })
+      .catch(function (err) {
+        throw err
+      })
+  } catch (error) {
+    logger.error(error)
+    throw new Error(`Error while executing submission ${error}`)
+  }
+}
+
+/**
+ * Stop and Delete Container
+ * @param {string} containerId
+ */
+module.exports.killContainer = async containerId => {
+  try {
+    const headerOptions = {
+      headers: {
+        host: null
+      }
+    }
+
+    // DELETE CONTAINER
+    logger.info(`Deleting Container ${containerId}`)
+    await request
+      .delete(dockerUrl + '/containers/' + containerId + '?v=true&force=true', headerOptions)
+      .then(function (res) {
+        logger.info(`Container Deleted ${containerId}`)
+        return true
+      })
+      .catch(function (err) {
+        logger.debug(`Logging error ${err}`)
+      })
+  } catch (error) {
+    logger.error(error)
+    throw new Error(`Error while killing docker container ${error}`)
+  }
+}
+
+/**
+ * Stop and Delete Container
+ * @param {string} containerId
+ */
+module.exports.getContainerLog = async (
+  submissionPath,
+  containerId,
+  logFileName
+) => {
+  try {
+    const headerOptions = {
+      headers: {
+        host: null
+      }
+    }
+
+    // GET CONTAINER LOG
+    logger.info(`Getting Logs for Container ${containerId}`)
+    await request
+      .get(
+        dockerUrl +
+          '/containers/' +
+          containerId +
+          '/logs?&stderr=true&stdout=true&timestamps=true',
+        headerOptions
+      )
+      .then(function (res) {
+        const buffer = Buffer.from(res, 'utf8')
+        fs.writeFileSync(
+          path.join(`${submissionPath}/artifacts/private/`, logFileName),
+          buffer
+        )
+        return true
+      })
+      .catch(function (err) {
+        throw err
+      })
+  } catch (error) {
+    logger.error(error)
+    throw new Error(`Error while getting logs from docker container ${error}`)
+  }
+}

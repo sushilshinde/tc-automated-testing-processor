@@ -1,0 +1,12 @@
+{
+  "provisional": {
+    "testType": "#P_TEST_TYPE#",
+    "customCodeRun": "#P_CUSTOM_RUN#",
+    "gpuFlag": "#P_GPU_FLAG#"
+  },
+  "system": {
+    "testType": "#S_TEST_TYPE#",
+    "customCodeRun": "#S_CUSTOM_RUN#",
+    "gpuFlag": "#S_GPU_FLAG#"
+  }
+}
