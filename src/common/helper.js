@@ -16,6 +16,8 @@ const m2m = m2mAuth(
 )
 const logger = require('./logger')
 const streamifier = require('streamifier')
+const git = require('isomorphic-git')
+git.plugins.set('fs', fs)
 
 // Variable to cache reviewTypes from Submission API
 const reviewTypes = {}
@@ -74,19 +76,21 @@ function getApi (token) {
  * @returns {String} reviewTypeId
  */
 async function getReviewTypeId (reviewTypeName) {
-  const token = await getM2Mtoken()
   if (reviewTypes[reviewTypeName]) {
     return reviewTypes[reviewTypeName]
   } else {
+    const token = await getM2Mtoken()
     const response = await getApi(token)
       .get('/reviewTypes')
       .query({
         name: reviewTypeName
       })
+
     if (response.body.length !== 0) {
       reviewTypes[reviewTypeName] = response.body[0].id
       return reviewTypes[reviewTypeName]
     }
+
     return null
   }
 }
@@ -96,7 +100,7 @@ async function getReviewTypeId (reviewTypeName) {
  * @param {String} token M2M token value
  * @returns {Object} superagent instance configured with Authorization header and API url prefix
  */
-function getV3Api (token) {
+function getV4Api (token) {
   return request
     .agent()
     .use(prefix(config.CHALLENGE_API_URL))
@@ -110,8 +114,12 @@ function getV3Api (token) {
  */
 async function getChallenge (challengeId) {
   const token = await getM2Mtoken()
-  const response = await getV3Api(token).get(`/challenges/${challengeId}`)
-  const content = _.get(response.body, 'result.content')
+  const response = await getV4Api(token)
+    .get('/challenges')
+    .query({
+      filter: `id=${challengeId}`
+    })
+  const content = _.get(response.body, 'result.content[0]')
   if (content) {
     return content
   }
@@ -290,16 +298,35 @@ async function prepareMetaData (submissionPath, testPhase) {
   return metadata
 }
 
+/**
+ * Clones the specification and tests to the folder
+ * where the submission will be downloaded
+ * @param {String} submissionId The submission id
+ */
+async function cloneSpecAndTests (submissionId) {
+  const subPath = path.join(__dirname, '../../submissions', submissionId, 'submission', 'tests')
+  logger.info(`Cloning test specification to ${subPath}`)
+  await git.clone({
+    dir: subPath,
+    url: config.git.GIT_REPOSITORY_URL,
+    singleBranch: true,
+    username: config.git.GIT_USERNAME,
+    password: config.git.GIT_PASSWORD
+  })
+  logger.info('Cloned successfully')
+}
+
 module.exports = {
   getM2Mtoken,
   downloadAndUnzipFile,
   getApi,
   getReviewTypeId,
-  getV3Api,
+  getV4Api,
   getChallenge,
   reqSubmission,
   postError,
   getSubmission,
   zipAndUploadArtifact,
-  prepareMetaData
+  prepareMetaData,
+  cloneSpecAndTests
 }

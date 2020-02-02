@@ -18,6 +18,13 @@ module.exports = {
     S3_BUCKET: process.env.S3_BUCKET // S3 Bucket to which test results need to be uploaded
   },
 
+  // Git options
+  git: {
+    GIT_USERNAME: process.env.GIT_USERNAME,
+    GIT_PASSWORD: process.env.GIT_PASSWORD,
+    GIT_REPOSITORY_URL: process.env.GIT_REPOSITORY_URL
+  },
+
   KAFKA_URL: process.env.KAFKA_URL || 'localhost:9092',
   KAFKA_CLIENT_CERT: process.env.KAFKA_CLIENT_CERT || fileIfExists('./kafkadev.cert'),
   KAFKA_CLIENT_CERT_KEY: process.env.KAFKA_CLIENT_CERT_KEY || fileIfExists('./kafkadev.key'),
@@ -26,8 +33,7 @@ module.exports = {
   // Kafka topics to listen to
   KAFKA_AGGREGATE_SUBMISSION_TOPIC: process.env.KAFKA_NEW_SUBMISSION_TOPIC || 'submission.notification.aggregate',
   KAFKA_NEW_SUBMISSION_TOPIC: process.env.KAFKA_NEW_SUBMISSION_TOPIC || 'submission.notification.create',
-  KAFKA_UPDATE_SUBMISSION_TOPIC: process.env.KAFKA_UPDATE_SUBMISSION_TOPIC || 'submission.notification.update',
-  KAFKA_SUBMISSION_SCORE_TOPIC: process.env.KAFKA_SUBMISSION_SCORE_TOPIC || 'submission.notification.score',
+  KAFKA_ERROR_TOPIC: process.env.KAFKA_ERROR_TOPIC || 'common.error.reporting',
 
   AV_SCAN_REVIEW_NAME: process.env.AV_SCAN_REVIEW_NAME || 'Virus Scan',
 
@@ -40,18 +46,20 @@ module.exports = {
 
   // API endpoints
   SUBMISSION_API_URL: process.env.SUBMISSION_API_URL || 'https://api.topcoder-dev.com/v5',
-  CHALLENGE_API_URL: process.env.CHALLENGE_API_URL || 'https://api.topcoder-dev.com/v3',
+  CHALLENGE_API_URL: process.env.CHALLENGE_API_URL || 'https://api.topcoder-dev.com/v4',
+  BUSAPI_URL: process.env.BUSAPI_URL || 'https://api.topcoder-dev.com/v5/bus/events',
 
   // Review options
+  // TODO - Update review type name for this tester app
   REVIEW_TYPE_NAME: process.env.REVIEW_TYPE_NAME || 'MMScorer',
+  // TODO - Update the scorecard id for this tester app
   REVIEW_SCORECARD_ID: process.env.REVIEW_SCORECARD_ID || '30001852',
 
-  BUSAPI_URL: process.env.BUSAPI_URL || 'https://api.topcoder-dev.com/v5/bus/events',
-  KAFKA_ERROR_TOPIC: process.env.KAFKA_ERROR_TOPIC || 'common.error.reporting',
+  // Challenge to consider for scoring
+  CHALLENGE_SUB_TRACK: process.env.CHALLENGE_SUB_TRACK || 'Automated Testing',
 
-  CHALLENGE_ID: process.env.CHALLENGE_ID ? Number(process.env.CHALLENGE_ID) : 30054682,
   PROVISIONAL_TESTING_TIMEOUT: process.env.PROVISIONAL_TESTING_TIMEOUT ? Number(process.env.PROVISIONAL_TESTING_TIMEOUT) : 2 * 60 * 60 * 1000, // 2 Hours
-  FINAL_ESTING_TIMEOUT: process.env.FINAL_ESTING_TIMEOUT ? Number(process.env.FINAL_ESTING_TIMEOUT) : 2 * 60 * 60 * 1000, // 2 Hours
+  FINAL_TESTING_TIMEOUT: process.env.FINAL_TESTING_TIMEOUT ? Number(process.env.FINAL_TESTING_TIMEOUT) : 2 * 60 * 60 * 1000, // 2 Hours
 
   PROVISIONAL_TESTER_COMMAND: (process.env.TESTER_COMMAND &&
     process.env.TESTER_COMMAND.split(',')) || [
@@ -82,7 +90,7 @@ module.exports = {
   ],
 
   DOCKER_IMAGE_NAME: process.env.DOCKER_IMAGE_NAME || 'ubuntu:latest',
-  DOCKER_MOUNT_PATH:
-    process.env.DOCKER_MOUNT_PATH || '`${submissionPath}:/workdir`',
+  DOCKER_SOLUTION_MOUNT_PATH:
+    process.env.DOCKER_SOLUTION_MOUNT_PATH || '`${submissionPath}:/workdir`',
   CUSTOM_RUN_COMMAND: process.env.CUSTOM_RUN_COMMAND
 }

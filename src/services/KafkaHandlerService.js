@@ -10,7 +10,6 @@ const rimraf = require('rimraf')
 const helper = require('../common/helper')
 const logger = require('../common/logger')
 
-const { performDataTest } = require('./DataTesterService')
 const { performCodeTest } = require('./CodeTesterService')
 const ReviewProducerService = require('./ReviewProducerService')
 const reviewProducer = new ReviewProducerService(config)
@@ -29,10 +28,6 @@ async function handle (message) {
   logger.info(`Kafka message: ${JSON.stringify(message, null, 2)}`)
 
   const avScanReviewTypeId = await helper.getReviewTypeId(config.AV_SCAN_REVIEW_NAME)
-
-  // TODO - Get clarity on how the relevant challenge id(s) are to be read
-  // TODO - Is it a group attribute that we need to watch out for or just read from config
-  const targetedChallenge = config.CHALLENGE_ID
 
   const resource = _.get(message, 'payload.resource', '')
   const typeId = _.get(message, 'payload.typeId', '')
@@ -58,22 +53,25 @@ async function handle (message) {
     return
   }
 
+  // Get the submission by submission id
+  logger.info(`Fetch submission using ${submissionId}`)
+  const submission = await helper.getSubmission(submissionId)
+
+  // Extract `challengeId from the submission object
+  const challengeId = _.get(submission, 'challengeId')
+
+  // Check if the contest associated with the submission is relevant
+  const challengeSubtrack = (await helper.getChallenge(challengeId)).subTrack
+
+  if (challengeSubtrack !== config.CHALLENGE_SUB_TRACK) {
+    logger.info(`Ignoring message as challenge with id - ${challengeId} is of subtrack ${challengeSubtrack}`)
+    return
+  }
+
+  // Clone the test specifications
+  await helper.cloneSpecAndTests(submissionId)
+
   try {
-    // Get the submission by submission id
-    logger.info(`Fetch submission using ${submissionId}`)
-    const submission = await helper.getSubmission(submissionId)
-
-    // Extract `challengeId from the submission object
-    const challengeId = _.get(submission, 'challengeId')
-
-    // Check for expected challengeId
-    // TODO - Get clarity on how the relevant challenge id(s) are to be read
-    // TODO - Is it a group attribute that we need to watch out for or just read from config
-    if (!challengeId || challengeId !== targetedChallenge) {
-      logger.info(`Ignoring message as challengeId - ${challengeId} is not of interest`)
-      return
-    }
-
     // Create `review` with `status = queued` for the submission
     reviewObject = await reviewProducer.createReview(submissionId, null, 'queued', { testType: testPhase })
 
@@ -101,41 +99,43 @@ async function handle (message) {
     const customCodeRun = testConfig[testPhase].customCodeRun
     const gpuFlag = testConfig[testPhase].gpuFlag
 
+    // TODO - Might not need if block (and for that matter the testconfig)
     if (testType === 'code') {
       if (!fs.existsSync(`${submissionPath}/submission/code`)) {
-        logger.error(`Wrong folder structure detectd, missing "code" folder for ${submissionId}.`)
-        throw new Error(`Wrong folder structure detectd, missing "code" folder for ${submissionId}.`)
+        logger.error(`Wrong folder structure detected, missing "code" folder for ${submissionId}.`)
+        throw new Error(`Wrong folder structure detected, missing "code" folder for ${submissionId}.`)
       }
 
       logger.info(`Started executing CODE type of submission for ${submissionId} | ${submissionPath}`)
       await performCodeTest(challengeId, submissionId, submissionPath, customCodeRun, testPhase, gpuFlag)
     }
 
-    if (customCodeRun !== 'true' && !fs.existsSync(`${submissionPath}/submission/solution`)) {
-      logger.error(`Wrong folder structure detectd, missing "solution" folder for ${submissionId}.`)
-      throw new Error(`Wrong folder structure detectd, missing "solution" folder for ${submissionId}.`)
-    }
+    // if (customCodeRun !== 'true' && !fs.existsSync(`${submissionPath}/submission/solution`)) {
+    //   logger.error(`Wrong folder structure detectd, missing "solution" folder for ${submissionId}.`)
+    //   throw new Error(`Wrong folder structure detectd, missing "solution" folder for ${submissionId}.`)
+    // }
 
-    // TODO - Update with path of log file
-    const resultFile = fs.readFileSync(path.join(`${submissionPath}/submission/artifacts/public`, 'result.txt'), 'utf-8')
-    const lines = resultFile.trim().split('\n')
-    // TODO - Update with index of the results in the log
-    score = lines.slice(-1)[0]
+    // // TODO - Update with path of log file
+    // const resultFile = fs.readFileSync(path.join(`${submissionPath}/submission/artifacts/public`, 'result.txt'), 'utf-8')
+    // const lines = resultFile.trim().split('\n')
+    // // TODO - Update with index of the results in the log
+    // score = lines.slice(-1)[0]
 
-    const metadata = await helper.prepareMetaData(submissionPath, testPhase)
-    logger.info(`Create Review for ${submissionId} with Score = ${score}`)
-    await reviewProducer.createReview(submissionId, score, 'completed', metadata, reviewObject)
+    // const metadata = await helper.prepareMetaData(submissionPath, testPhase)
+    // logger.info(`Create Review for ${submissionId} with Score = ${score}`)
+    // await reviewProducer.createReview(submissionId, score, 'completed', metadata, reviewObject)
   } catch (error) {
     logger.logFullError(error)
     logger.info('Create Review with Negative Score')
-    await reviewProducer.createReview(submissionId, -1, 'completed', { testType: testPhase }, reviewObject)
+    // await reviewProducer.createReview(submissionId, -1, 'completed', { testType: testPhase }, reviewObject)
   } finally {
-    const filePath = path.join(__dirname, '../../submissions', submissionId)
+    // TODO - Uncomment below
+    // const filePath = path.join(__dirname, '../../submissions', submissionId)
 
-    logger.info(`Uploading artifacts for ${submissionId}`)
-    await helper.zipAndUploadArtifact(filePath, submissionId, testPhase)
+    // logger.info(`Uploading artifacts for ${submissionId}`)
+    // await helper.zipAndUploadArtifact(filePath, submissionId, testPhase)
 
-    rimraf.sync(`${filePath}`)
+    // rimraf.sync(`${filePath}`)
     logger.info(`Process complete for submission: ${submissionId}`)
     logger.resetTransports()
   }

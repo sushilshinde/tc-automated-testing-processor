@@ -1,7 +1,7 @@
 {
   "system": {
-    "testType": "#S_TEST_TYPE#",
-    "customCodeRun": "#S_CUSTOM_RUN#",
-    "gpuFlag": "#S_GPU_FLAG#"
+    "testType": "code",
+    "customCodeRun": "false",
+    "gpuFlag": "false"
   }
 }

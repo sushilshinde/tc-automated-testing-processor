@@ -1,5 +1,7 @@
+# Folders
 node_modules
-
-.DS_Store
-
 submissions
+
+# Files
+.env
+.DS_Store

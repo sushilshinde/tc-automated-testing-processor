@@ -13,16 +13,21 @@ const dockerUrl = 'http://unix:/var/run/docker.sock:'
 
 /**
  * Build Docker Image by Using the `Dockerfile` from Submission
- * @param {string} submissionPath
- * @param {string} submissionId
+ * @param {String} submissionPath
+ * @param {String} submissionId
+ * @param {String} imageTag The image tag
  */
-module.exports.buildDockerImage = async (submissionPath, submissionId) => {
+module.exports.buildDockerImage = async (
+  submissionId,
+  cwdPath,
+  imageTag
+) => {
   try {
     // BUILD DOCKER IMAGE
     logger.info(`Docker Image Creation Started for ${submissionId}`)
 
-    const files = fs.readdirSync(path.resolve(`${submissionPath}/code`))
-    const codeFolder = path.resolve(`${submissionPath}/code`)
+    // const codeFolder = path.resolve(`${submissionPath}/code`)
+    const files = fs.readdirSync(cwdPath)
     const dockerFile = path.resolve(`${submissionPath}/Dockerfile.tar.gz`)
 
     logger.info('Creating Tar ball of Dockerfile')
@@ -30,7 +35,7 @@ module.exports.buildDockerImage = async (submissionPath, submissionId) => {
     tar.c(
       {
         gzip: true,
-        cwd: codeFolder,
+        cwd: cwdPath,
         file: dockerFile,
         sync: true
       },
@@ -49,7 +54,7 @@ module.exports.buildDockerImage = async (submissionPath, submissionId) => {
     logger.info('Calling Docker API for creating Image')
     await request
       .post(
-        dockerUrl + '/build?t=' + submissionId + '&nocache=true&forcerm=true',
+        dockerUrl + '/build?t=' + imageTag + '&nocache=true&forcerm=true',
         headerOptions
       )
       .then(function (res) {
@@ -112,10 +117,11 @@ module.exports.createContainer = async (
   mountPath,
   testCommand,
   runner, // solution or tester
-  gpuFlag = 'false'
+  gpuFlag = 'false',
+  containerName
 ) => {
   try {
-    logger.info(`Docker Container Creation Started for ${submissionId}`)
+    logger.info(`Docker Container Creation Started for ${submissionId} with name ${containerName}`)
 
     const headerOptions = {
       headers: {
@@ -127,31 +133,20 @@ module.exports.createContainer = async (
         HostConfig: {
           Binds: [eval(mountPath)],
           NetworkDisabled: true,
-          ReadonlyRootfs: true,
-          VolumesFrom: [`${challengeId}:ro`],
-          ...(gpuFlag === 'true') ? { Gpus: 'all' } : {},
-          LogConfig: {
-            Type: 'awslogs',
-            Config: {
-              'awslogs-region': 'us-east-1',
-              'awslogs-group': '/aws/mm-challenges',
-              'awslogs-stream': `${challengeId}-${submissionId}-${runner}`
-            }
-          }
+          ReadonlyRootfs: true
         },
-        Cmd: testCommand,
         Tty: true
       }
     }
 
     return await request
       .post(
-        dockerUrl + '/containers/create?name=' + submissionId,
+        `${dockerUrl}/containers/create?name=${containerName}`,
         headerOptions
       )
       .then(function (res) {
         logger.info(
-          `Docker Container (${res.Id}) Creation Completed for ${submissionId}`
+          `Docker Container (${res.Id}) Creation Completed for ${submissionId} with name ${containerName}`
         )
         return res.Id
       })

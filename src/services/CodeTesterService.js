@@ -13,12 +13,12 @@ const {
   deleteDockerImage,
   createContainer,
   executeSubmission,
-  killContainer,
-  getContainerLog
+  getContainerLog,
+  killContainer
 } = require('../common/docker')
 
 let submissionDirectory
-let containerId
+let solutionContainerId
 
 module.exports.performCodeTest = async (
   challengeId,
@@ -30,77 +30,78 @@ module.exports.performCodeTest = async (
 ) => {
   try {
     submissionDirectory = path.resolve(`${submissionPath}/submission`)
-    // BUILD IMAGE
+    // Build image from user solution
     await Promise.race([
-      buildDockerImage(submissionDirectory, submissionId),
+      buildDockerImage(submissionDirectory, submissionId, `${submissionId}-solution-image`),
       new Promise((resolve, reject) => {
         setTimeout(
-          () => reject(new Error('Timeout :: Docker Container Start')),
+          () => reject(new Error('Timeout :: Docker solution image build')),
           (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT
         )
       })
     ])
 
-    if (customRun === 'true') {
-      logger.info('Started executing custom runner for the submission')
-      const { stdout, stderr } = await exec(eval(config.CUSTOM_RUN_COMMAND), { timeout: (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT })
+    let testCommand = []
+    // testCommand = (testPhase === 'system') ? eval(process.env.FINAL_SOLUTION_COMMAND) : eval(process.env.PROVISIONAL_SOLUTION_COMMAND)
+    // testCommand = testCommand.split(',')
 
-      if (stderr) {
-        logger.error(`error: ${stderr}`)
-        throw new Error(stderr)
-      }
-      logger.info(stdout)
-    } else {
-      let testCommand = []
-      testCommand = (testPhase === 'system') ? eval(process.env.FINAL_SOLUTION_COMMAND) : eval(process.env.PROVISIONAL_SOLUTION_COMMAND)
-      testCommand = testCommand.split(',')
+    // Create container from user solution image
+    solutionContainerId = await Promise.race([
+      createContainer(
+        challengeId,
+        submissionId,
+        `${submissionId}-solution-image`,
+        submissionDirectory,
+        config.DOCKER_SOLUTION_MOUNT_PATH,
+        testCommand,
+        'solution',
+        gpuFlag,
+        `${submissionId}-solution-container`
+      ),
+      new Promise((resolve, reject) => {
+        setTimeout(
+          () => reject(new Error('Timeout :: Docker solution container creation')),
+          (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT
+        )
+      })
+    ])
 
-      // Start solution container
-      containerId = await Promise.race([
-        createContainer(
-          challengeId,
-          submissionId,
-          submissionId,
-          submissionDirectory,
-          config.DOCKER_MOUNT_PATH,
-          testCommand,
-          'solution',
-          gpuFlag
-        ),
-        new Promise((resolve, reject) => {
-          setTimeout(
-            () => reject(new Error('Timeout :: Docker Container Start')),
-            (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT
-          )
-        })
-      ])
+    // Start user solution container
+    await Promise.race([
+      executeSubmission(solutionContainerId),
+      new Promise((resolve, reject) => {
+        setTimeout(
+          () => reject(new Error('Timeout :: Docker solution container execution')),
+          (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT
+        )
+      })
+    ])
 
-      // Execute solution
-      await Promise.race([
-        executeSubmission(containerId),
-        new Promise((resolve, reject) => {
-          setTimeout(
-            () => reject(new Error('Timeout :: Docker Execution')),
-            (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT
-          )
-        })
-      ])
-    }
+    // Build image from test specification
+    await Promise.race([
+      buildDockerImage(submissionDirectory, submissionId, `${submissionId}-test-specs-image`),
+      new Promise((resolve, reject) => {
+        setTimeout(
+          () => reject(new Error('Timeout :: Docker test specs image build')),
+          (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT
+        )
+      })
+    ])
 
     logger.info('CODE part of execution is completed')
   } catch (error) {
     logger.logFullError(error)
     throw new Error(error)
   } finally {
-    if (customRun === 'false') {
-      // await getContainerLog(
-      //   submissionDirectory,
-      //   containerId,
-      //   'solution_container.log'
-      // )
-      await killContainer(containerId)
-    }
-    await deleteDockerImage(submissionId)
+    // if (customRun === 'false') {
+    //   await getContainerLog(
+    //     submissionDirectory,
+    //     containerId,
+    //     'solution_container.log'
+    //   )
+    //   await killContainer(containerId)
+    // }
+    // await deleteDockerImage(submissionId)
     logger.info('CODE Testing cycle completed')
   }
 }

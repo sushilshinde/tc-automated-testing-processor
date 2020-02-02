@@ -48,7 +48,6 @@ const dataHandler = (messageSet, topic, partition) =>
       return
     }
 
-    // TODO - Determine the topic to listen on
     if (messageJSON.payload.originalTopic !== config.KAFKA_NEW_SUBMISSION_TOPIC) {
       logger.info(`Skip message ${message} as the message is of no interest.`)
       return
@@ -81,10 +80,8 @@ function check () {
 
 const strategies = [
   {
-    // TODO - Update object with the topics to listen on
     subscriptions: [
-      config.KAFKA_AGGREGATE_SUBMISSION_TOPIC,
-      config.KAFKA_SUBMISSION_SCORE_TOPIC
+      config.KAFKA_AGGREGATE_SUBMISSION_TOPIC
     ],
     handler: dataHandler
   }
