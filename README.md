@@ -46,3 +46,7 @@ Other values used are defaults
   - The project folder is expected to be created through the `gauge init {template}` command. It sets up the necessary files. You only need to provide your specs and tests, and then commit and store it in gitlab / github
   - The container is created along with a folder in the host filesystem mounted as a volumne. This will be the location where the test results will be stored (the public artifacts folder in the submission path). The tests are then run through `gauge run specs` command
   - The results, located at `reports/json-report/result.json` are then copied back to the host volume
+
+## Test Specification Templates
+
+- For Javascript: [Sample](https://gitlab.com/callmekatootie/gauge-sample-spec-js)
