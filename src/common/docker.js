@@ -135,7 +135,7 @@ module.exports.createContainer = async (
         HostConfig: {
           Binds: binds,
           NetworkDisabled: true,
-          ReadonlyRootfs: true,
+          ReadonlyRootfs: false,
           VolumesFrom: volumesFrom
         },
         Cmd: testCommand,

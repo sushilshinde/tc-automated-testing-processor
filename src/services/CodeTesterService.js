@@ -154,6 +154,7 @@ module.exports.performCodeTest = async (
       'test-spec-container.log'
     )
     await killContainer(testSpecContainerId)
+    await killContainer(solutionContainerId)
     // TODO - kill solution container too
     // TODO - an uncomment the line below to remove both images
     // await deleteDockerImage(submissionId)
