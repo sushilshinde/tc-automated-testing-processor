@@ -20,15 +20,15 @@ const dockerUrl = 'http://unix:/var/run/docker.sock:'
 module.exports.buildDockerImage = async (
   submissionId,
   cwdPath,
-  imageTag
+  dockerfilePath,
+  imageTag,
+  logPath
 ) => {
   try {
     // BUILD DOCKER IMAGE
     logger.info(`Docker Image Creation Started for ${submissionId}`)
 
-    // const codeFolder = path.resolve(`${submissionPath}/code`)
     const files = fs.readdirSync(cwdPath)
-    const dockerFile = path.resolve(`${submissionPath}/Dockerfile.tar.gz`)
 
     logger.info('Creating Tar ball of Dockerfile')
 
@@ -36,7 +36,7 @@ module.exports.buildDockerImage = async (
       {
         gzip: true,
         cwd: cwdPath,
-        file: dockerFile,
+        file: dockerfilePath,
         sync: true
       },
       files
@@ -47,7 +47,7 @@ module.exports.buildDockerImage = async (
         'Content-Type': 'application/tar',
         host: null
       },
-      body: fs.createReadStream(path.join(submissionPath, 'Dockerfile.tar.gz')),
+      body: fs.createReadStream(dockerfilePath),
       encoding: null
     }
 
@@ -59,7 +59,7 @@ module.exports.buildDockerImage = async (
       )
       .then(function (res) {
         const buffer = Buffer.from(res, 'utf8')
-        fs.writeFileSync(`${submissionPath}/artifacts/public/docker-image-build.log`, buffer)
+        fs.writeFileSync(logPath, buffer)
         logger.info('Docker Image has been created successfully')
         return true
       })
@@ -110,7 +110,6 @@ module.exports.deleteDockerImage = async imageName => {
  * @returns {string} Container ID
  */
 module.exports.createContainer = async (
-  challengeId,
   submissionId,
   imageName,
   submissionPath,
@@ -118,10 +117,13 @@ module.exports.createContainer = async (
   testCommand,
   runner, // solution or tester
   gpuFlag = 'false',
-  containerName
+  containerName,
+  volumesFrom = []
 ) => {
   try {
     logger.info(`Docker Container Creation Started for ${submissionId} with name ${containerName}`)
+
+    const binds = mountPath ? [eval(mountPath)] : undefined
 
     const headerOptions = {
       headers: {
@@ -131,10 +133,12 @@ module.exports.createContainer = async (
       json: {
         Image: imageName,
         HostConfig: {
-          Binds: [eval(mountPath)],
+          Binds: binds,
           NetworkDisabled: true,
-          ReadonlyRootfs: true
+          ReadonlyRootfs: true,
+          VolumesFrom: volumesFrom
         },
+        Cmd: testCommand,
         Tty: true
       }
     }

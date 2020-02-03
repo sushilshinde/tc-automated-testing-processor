@@ -19,6 +19,7 @@ const {
 
 let submissionDirectory
 let solutionContainerId
+let testSpecContainerId
 
 module.exports.performCodeTest = async (
   challengeId,
@@ -30,9 +31,21 @@ module.exports.performCodeTest = async (
 ) => {
   try {
     submissionDirectory = path.resolve(`${submissionPath}/submission`)
+    let cwdPath = `${submissionDirectory}/code`
+    let dockerfilePath = `${submissionDirectory}/SolutionDockerfile.tar.gz`
+    let logPath = `${submissionDirectory}/artifacts/public/solution-docker-image-build.log`
+    let imageName = `${submissionId}-solution-image`
+    let solutionContainerName = `${submissionId}-solution-container`
+
     // Build image from user solution
     await Promise.race([
-      buildDockerImage(submissionDirectory, submissionId, `${submissionId}-solution-image`),
+      buildDockerImage(
+        submissionId,
+        cwdPath,
+        dockerfilePath,
+        imageName,
+        logPath
+      ),
       new Promise((resolve, reject) => {
         setTimeout(
           () => reject(new Error('Timeout :: Docker solution image build')),
@@ -48,15 +61,14 @@ module.exports.performCodeTest = async (
     // Create container from user solution image
     solutionContainerId = await Promise.race([
       createContainer(
-        challengeId,
         submissionId,
-        `${submissionId}-solution-image`,
+        imageName,
         submissionDirectory,
         config.DOCKER_SOLUTION_MOUNT_PATH,
         testCommand,
         'solution',
         gpuFlag,
-        `${submissionId}-solution-container`
+        solutionContainerName
       ),
       new Promise((resolve, reject) => {
         setTimeout(
@@ -77,12 +89,55 @@ module.exports.performCodeTest = async (
       })
     ])
 
+    cwdPath = `${submissionDirectory}/tests`
+    dockerfilePath = `${submissionDirectory}/TestSpecDockerfile.tar.gz`
+    logPath = `${submissionDirectory}/artifacts/public/test-spec-docker-image-build.log`
+    imageName = `${submissionId}-test-spec-image`
+
     // Build image from test specification
     await Promise.race([
-      buildDockerImage(submissionDirectory, submissionId, `${submissionId}-test-specs-image`),
+      buildDockerImage(
+        submissionId,
+        cwdPath,
+        dockerfilePath,
+        imageName,
+        logPath
+      ),
       new Promise((resolve, reject) => {
         setTimeout(
           () => reject(new Error('Timeout :: Docker test specs image build')),
+          (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT
+        )
+      })
+    ])
+
+    // Create container from test spec image
+    testSpecContainerId = await Promise.race([
+      createContainer(
+        submissionId,
+        imageName,
+        submissionDirectory,
+        null,
+        testCommand,
+        'solution',
+        gpuFlag,
+        `${submissionId}-test-spec-container`,
+        [`${solutionContainerName}:ro`]
+      ),
+      new Promise((resolve, reject) => {
+        setTimeout(
+          () => reject(new Error('Timeout :: Docker test spec container creation')),
+          (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT
+        )
+      })
+    ])
+
+    // Start test spec container
+    await Promise.race([
+      executeSubmission(testSpecContainerId),
+      new Promise((resolve, reject) => {
+        setTimeout(
+          () => reject(new Error('Timeout :: Docker test spec container execution')),
           (testPhase === 'system') ? config.FINAL_TESTING_TIMEOUT : config.PROVISIONAL_TESTING_TIMEOUT
         )
       })
@@ -93,14 +148,14 @@ module.exports.performCodeTest = async (
     logger.logFullError(error)
     throw new Error(error)
   } finally {
-    // if (customRun === 'false') {
-    //   await getContainerLog(
-    //     submissionDirectory,
-    //     containerId,
-    //     'solution_container.log'
-    //   )
-    //   await killContainer(containerId)
-    // }
+    await getContainerLog(
+      submissionDirectory,
+      testSpecContainerId,
+      'test-spec-container.log'
+    )
+    await killContainer(testSpecContainerId)
+    // TODO - kill solution container too
+    // TODO - an uncomment the line below to remove both images
     // await deleteDockerImage(submissionId)
     logger.info('CODE Testing cycle completed')
   }
