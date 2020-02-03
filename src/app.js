@@ -61,8 +61,7 @@ const dataHandler = (messageSet, topic, partition) =>
       })
       .finally(() => {
         logger.info('Committing offset')
-        // TODO - undo below commit
-        // consumer.commitOffset({ topic, partition, offset: m.offset })
+        consumer.commitOffset({ topic, partition, offset: m.offset })
       })
   })
 

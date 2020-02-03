@@ -24,6 +24,7 @@ const testPhase = 'system'
  */
 async function handle (message) {
   let reviewObject
+  let result
 
   logger.info(`Kafka message: ${JSON.stringify(message, null, 2)}`)
 
@@ -99,43 +100,45 @@ async function handle (message) {
     const customCodeRun = testConfig[testPhase].customCodeRun
     const gpuFlag = testConfig[testPhase].gpuFlag
 
-    // TODO - Might not need if block (and for that matter the testconfig)
-    if (testType === 'code') {
-      if (!fs.existsSync(`${submissionPath}/submission/code`)) {
-        logger.error(`Wrong folder structure detected, missing "code" folder for ${submissionId}.`)
-        throw new Error(`Wrong folder structure detected, missing "code" folder for ${submissionId}.`)
-      }
-
-      logger.info(`Started executing CODE type of submission for ${submissionId} | ${submissionPath}`)
-      await performCodeTest(challengeId, submissionId, submissionPath, customCodeRun, testPhase, gpuFlag)
+    if (!fs.existsSync(`${submissionPath}/submission/code`)) {
+      logger.error(`Wrong folder structure detected, missing "code" folder for ${submissionId}.`)
+      throw new Error(`Wrong folder structure detected, missing "code" folder for ${submissionId}.`)
     }
 
-    // if (customCodeRun !== 'true' && !fs.existsSync(`${submissionPath}/submission/solution`)) {
-    //   logger.error(`Wrong folder structure detectd, missing "solution" folder for ${submissionId}.`)
-    //   throw new Error(`Wrong folder structure detectd, missing "solution" folder for ${submissionId}.`)
-    // }
+    logger.info(`Started executing CODE type of submission for ${submissionId} | ${submissionPath}`)
+    await performCodeTest(challengeId, submissionId, submissionPath, customCodeRun, testPhase, gpuFlag)
 
-    // // TODO - Update with path of log file
-    // const resultFile = fs.readFileSync(path.join(`${submissionPath}/submission/artifacts/public`, 'result.txt'), 'utf-8')
-    // const lines = resultFile.trim().split('\n')
-    // // TODO - Update with index of the results in the log
-    // score = lines.slice(-1)[0]
+    const resultFilePath = path.join(`${submissionPath}/submission/artifacts/public/json-report`, 'result.json')
 
+    if (fs.existsSync(resultFilePath)) {
+      const resultFile = fs.readFileSync(resultFilePath, 'utf-8')
+      result = JSON.parse(resultFile)
+      score = result.executionStatus === 'failed' ? 0 : 100
+    } else {
+      throw new Error('No result file available. Cannot determine score')
+    }
+
+    // TODO - Use helper once we decide about the private metadata
+    // TODO - for now, we set it directly in the next statement
     // const metadata = await helper.prepareMetaData(submissionPath, testPhase)
-    // logger.info(`Create Review for ${submissionId} with Score = ${score}`)
-    // await reviewProducer.createReview(submissionId, score, 'completed', metadata, reviewObject)
+    const metadata = {
+      testType: testPhase,
+      public: result
+    }
+
+    logger.info(`Create Review for ${submissionId} with Score = ${score}`)
+    await reviewProducer.createReview(submissionId, score, 'completed', metadata, reviewObject)
   } catch (error) {
     logger.logFullError(error)
     logger.info('Create Review with Negative Score')
-    // await reviewProducer.createReview(submissionId, -1, 'completed', { testType: testPhase }, reviewObject)
+    await reviewProducer.createReview(submissionId, -1, 'completed', { testType: testPhase }, reviewObject)
   } finally {
-    // TODO - Uncomment below
-    // const filePath = path.join(__dirname, '../../submissions', submissionId)
+    const filePath = path.join(__dirname, '../../submissions', submissionId)
 
-    // logger.info(`Uploading artifacts for ${submissionId}`)
-    // await helper.zipAndUploadArtifact(filePath, submissionId, testPhase)
+    logger.info(`Uploading artifacts for ${submissionId}`)
+    await helper.zipAndUploadArtifact(filePath, submissionId, testPhase)
 
-    // rimraf.sync(`${filePath}`)
+    rimraf.sync(`${filePath}`)
     logger.info(`Process complete for submission: ${submissionId}`)
     logger.resetTransports()
   }

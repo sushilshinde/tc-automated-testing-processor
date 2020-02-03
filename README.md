@@ -1,78 +1,48 @@
-# Topcoder Marathon Match processor
+# Topcoder Automated Tester
 
-Abstract MM Scorer, that can be used for any new MM challenges
+Currently, the tester supports testing javascript code
 
-## Deployment
+You need to set the following environment variables:
 
-The deployment steps that follow describe deployment of this processor locally and manually. To automatically deploy to AWS EC2, refer to the [Gitlab CI / CD Setup](#gitlab-ci-/-cd-setup) section below.
+```bash
+# Auth0 details
+AUTH0_URL
+AUTH0_AUDIENCE
+TOKEN_CACHE_TIME
+AUTH0_CLIENT_ID
+AUTH0_CLIENT_SECRET
+VALID_ISSUERS
 
-### Clone this repository
+# The git repository from which we copy the tests
+GIT_REPOSITORY_URL
+# The volume to mount in the solution container (which is used eventually by test spec container)
+DOCKER_SOLUTION_MOUNT_PATH
+# The volume to mount in the test spec container (into which we store the test result json)
+DOCKET_TEST_SPEC_MOUNT_PATH
 
-Clone this repository and copy the source code to your local sytem
+# The git repository access credentials. Leave empty if repository is publicly available
+GIT_USERNAME
+GIT_PASSWORD
 
-### Update the Dockerfile
+# Only challenges under this track will be considered. Default value is 'Automated Testing'
+CHALLENGE_SUB_TRACK
 
-For the Marathon Match contest, you will update the Dockerfile as needed. After updating,
+# AWS details to store assets (artifacts, logs etc)
+AWS_REGION
+S3_BUCKET
+```
 
-1. Build image
-   > `docker build -t topcoder/<IMAGE NAME>:<IMAGE_VERSION> -f Dockerfile .`
-2. Tag the image as `latest`
-   > `docker tag topcoder/<IMAGE NAME>:<IMAGE_VERSION> topcoder/<IMAGE NAME>:latest`
-3. Push docker image to `topcoder` dockerhub account
-   > `docker push topcoder/<IMAGE NAME>:latest`
+Other values used are defaults
 
-### Wire Up Scorer with TC Platform
+## Assumptions / Workflow
 
-1. Update following environment variables in `ecosystem.config.js` file as per new challenge:
-   - DOCKER_IMAGE_NAME
-   - EXECUTION_COMMAND
-   - CHALLENGE_ID
-   - REVIEW_TYPE_NAME
-   - REVIEWER_ID_NAMESPACE
-
-### Start MM Processor
-
-After updating the environment variables, you will start the processor by:
-
-1. Install `pm2` module to keep the processor running, even when you exit the console
-   > `sudo npm install pm2 -g`
-2. Install node dependencies
-   > `npm install`
-3. Start processor
-   > `pm2 start`
-
-## Gitlab CI / CD Setup
-
-The project also contains the files necessary for auto deployment of the processor to Amazon S3.
-Follow the steps mentioned below.
-
-### Prerequisite
-
-- Setup your own gitlab CI runner before you start. [Reference](https://docs.gitlab.com/runner/#install-gitlab-runner). Our deployment uses the runner that you have configured. Note that we are not using shared runners, so the gitlab runner that you set up should have the same registration token as the one that you will be using when deploying the assets (this will come up below)
-
-### Setup
-
-1. Create a Personal Access token on Gitlab. After you login to Gitlab, in the top right, click your profile picture and select `Settings` from the dropdown
-2. In the left sidebar, click on Access Tokens
-3. Enter a `Name` and select `api` and `write_repository` scopes. Generate the token and make a note of the token
-4. Disable shared runners. In the repository that contains the source code for the processor (most likely the repository where you are reading this README), go the Settings -> CI / CD. Expand the `Runners` section and click on Disable shared Runners in the `Shared Runners` section.
-5. Make a note of the registration token in the _Set up a specific Runner manually_ section.
-6. Ensure that you have a dockerhub account. Create a repository in dockerhub with the name same as the name of the repository in gitlab.
-7. Create the AWS Cloudformation stack using SAM. At this step, pause and refer to the `README.md` file in the `aws` folder. Once you are done following the steps in that document, come back and resume.
-8. Set up the following variables in your project. In your repository in gitalb, go to Settings -> CI / CD. Expand the Variables section and create the following:
-
-| Type     | Key                    | Value                                                               |
-| -------- | ---------------------- | ------------------------------------------------------------------- |
-| Variable | DOCKER_HUB_ACCOUNT     | _Your dockerhub account id_                                         |
-| Variable | DOCKER_HUB_PASSWORD    | _Your dockerhub account password_                                   |
-| Variable | PULL_CODE_API_ENDPOINT | _The API Gateway URL OutputValue you received after SAM deployment_ |
-| Variable | ACCESS_TOKEN           | _Your gitlab personal access token_                                 |
-
-### Trigger
-
-1. The pipeline will trigger only on the `develop` branch. You can change this in the `.gitlab-ci.yml` file
-2. Now, when a new Marathon Match comes in, all you need to do is to update the Dockerfile with the steps relevant for that contest and commit your changes.
-   Push the changes to gitlab (`develop` branch). If configured correctly, you should see the source code copied over to Amazon S3 after some time.
-3. Once the source code is uploaded to S3, CodePipeline will start to build and deploy the code to the EC2 instance. You can login to AWS console and check the pipeline. All steps should be successful.
-4. Due to some missing component in the source code, the application cannot actually start, so there is no way to verify the application. But you can try to login to the EC2 instance and check through pm2.
-5. To login to the EC2 instance, you need to uncomment SecurityGroupIngress section from AppSecurityGroup, and uncomment KeyName from DeploymentInstance and put a valid key pair name. Then you can login to the EC2 instance using the key pair and run `pm2 status`.
+- For below statements, the submission path refers to the `./submissions/{submissionId}/submission` folder
+- The submission is downloaded to `code` folder under submission path
+  - This folder is expected to contain a Dockerfile and a `src` folder
+  - The `src` folder is mounted as a volume to the container created from the image that is built
+- Using the `GIT_REPOSITORY_URL` environment variable, the tests are downloaded in to the `tests` folder under submission path
+  - This folder is expected to contain a Dockerfile and a `project` folder
+  - The Dockerfile will set up Gauge CLI and mount the volumes of the submission container. It also runs a bash script that copies over the contents in the volume `src` (obtained through the submission container) into a `src` folder, that is created inside the `project` folder. Additionally, it also sets up [json-report](https://github.com/getgauge-contrib/json-report) to store the results of the test execution in json
+  - The project folder is expected to be created through the `gauge init {template}` command. It sets up the necessary files. You only need to provide your specs and tests, and then commit and store it in gitlab / github
+  - The container is created along with a folder in the host filesystem mounted as a volumne. This will be the location where the test results will be stored (the public artifacts folder in the submission path). The tests are then run through `gauge run specs` command
+  - The results, located at `reports/json-report/result.json` are then copied back to the host volume

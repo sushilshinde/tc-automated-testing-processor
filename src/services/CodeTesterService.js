@@ -4,8 +4,6 @@
 
 const path = require('path')
 const config = require('config')
-const util = require('util')
-const exec = util.promisify(require('child_process').exec)
 const logger = require('../common/logger')
 
 const {
@@ -20,6 +18,8 @@ const {
 let submissionDirectory
 let solutionContainerId
 let testSpecContainerId
+let solutionImageName
+let testSpecImageName
 
 module.exports.performCodeTest = async (
   challengeId,
@@ -34,7 +34,7 @@ module.exports.performCodeTest = async (
     let cwdPath = `${submissionDirectory}/code`
     let dockerfilePath = `${submissionDirectory}/SolutionDockerfile.tar.gz`
     let logPath = `${submissionDirectory}/artifacts/public/solution-docker-image-build.log`
-    let imageName = `${submissionId}-solution-image`
+    solutionImageName = `${submissionId}-solution-image`
     let solutionContainerName = `${submissionId}-solution-container`
 
     // Build image from user solution
@@ -43,7 +43,7 @@ module.exports.performCodeTest = async (
         submissionId,
         cwdPath,
         dockerfilePath,
-        imageName,
+        solutionImageName,
         logPath
       ),
       new Promise((resolve, reject) => {
@@ -55,16 +55,14 @@ module.exports.performCodeTest = async (
     ])
 
     let testCommand = []
-    // testCommand = (testPhase === 'system') ? eval(process.env.FINAL_SOLUTION_COMMAND) : eval(process.env.PROVISIONAL_SOLUTION_COMMAND)
-    // testCommand = testCommand.split(',')
 
     // Create container from user solution image
     solutionContainerId = await Promise.race([
       createContainer(
         submissionId,
-        imageName,
+        solutionImageName,
         submissionDirectory,
-        config.DOCKER_SOLUTION_MOUNT_PATH,
+        config.DOCKER_SOLUTION_MOUNT_PATH, // `/src`
         testCommand,
         'solution',
         gpuFlag,
@@ -92,7 +90,7 @@ module.exports.performCodeTest = async (
     cwdPath = `${submissionDirectory}/tests`
     dockerfilePath = `${submissionDirectory}/TestSpecDockerfile.tar.gz`
     logPath = `${submissionDirectory}/artifacts/public/test-spec-docker-image-build.log`
-    imageName = `${submissionId}-test-spec-image`
+    testSpecImageName = `${submissionId}-test-spec-image`
 
     // Build image from test specification
     await Promise.race([
@@ -100,7 +98,7 @@ module.exports.performCodeTest = async (
         submissionId,
         cwdPath,
         dockerfilePath,
-        imageName,
+        testSpecImageName,
         logPath
       ),
       new Promise((resolve, reject) => {
@@ -115,9 +113,9 @@ module.exports.performCodeTest = async (
     testSpecContainerId = await Promise.race([
       createContainer(
         submissionId,
-        imageName,
+        testSpecImageName,
         submissionDirectory,
-        null,
+        config.DOCKET_TEST_SPEC_MOUNT_PATH,
         testCommand,
         'solution',
         gpuFlag,
@@ -150,14 +148,18 @@ module.exports.performCodeTest = async (
   } finally {
     await getContainerLog(
       submissionDirectory,
+      solutionContainerId,
+      'solution-container.log'
+    )
+    await getContainerLog(
+      submissionDirectory,
       testSpecContainerId,
       'test-spec-container.log'
     )
     await killContainer(testSpecContainerId)
     await killContainer(solutionContainerId)
-    // TODO - kill solution container too
-    // TODO - an uncomment the line below to remove both images
-    // await deleteDockerImage(submissionId)
+    await deleteDockerImage(testSpecImageName)
+    await deleteDockerImage(solutionImageName)
     logger.info('CODE Testing cycle completed')
   }
 }

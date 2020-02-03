@@ -61,36 +61,8 @@ module.exports = {
   PROVISIONAL_TESTING_TIMEOUT: process.env.PROVISIONAL_TESTING_TIMEOUT ? Number(process.env.PROVISIONAL_TESTING_TIMEOUT) : 2 * 60 * 60 * 1000, // 2 Hours
   FINAL_TESTING_TIMEOUT: process.env.FINAL_TESTING_TIMEOUT ? Number(process.env.FINAL_TESTING_TIMEOUT) : 2 * 60 * 60 * 1000, // 2 Hours
 
-  PROVISIONAL_TESTER_COMMAND: (process.env.TESTER_COMMAND &&
-    process.env.TESTER_COMMAND.split(',')) || [
-    'java',
-    '-jar',
-    '/scorer/tester.jar,/workdir/truth/truth-final.txt,/workdir/solution/solution.csv'
-  ],
-
-  FINAL_TESTER_COMMAND: (process.env.TESTER_COMMAND &&
-    process.env.TESTER_COMMAND.split(',')) || [
-    'java',
-    '-jar',
-    '/scorer/tester.jar,/workdir/truth/truth-final.txt,/workdir/solution/solution.csv'
-  ],
-
-  PROVISIONAL_SOLUTION_COMMAND: (process.env.SOLUTION_COMMAND &&
-    process.env.SOLUTION_COMMAND.split(',')) || [
-    '/bin/sh',
-    '-c',
-    '/work/test.sh /data /workdir/solution/solution.csv'
-  ],
-
-  FINAL_SOLUTION_COMMAND: (process.env.SOLUTION_COMMAND &&
-    process.env.SOLUTION_COMMAND.split(',')) || [
-    '/bin/sh',
-    '-c',
-    '/work/test.sh /data /workdir/solution/solution.csv'
-  ],
-
-  DOCKER_IMAGE_NAME: process.env.DOCKER_IMAGE_NAME || 'ubuntu:latest',
   DOCKER_SOLUTION_MOUNT_PATH:
-    process.env.DOCKER_SOLUTION_MOUNT_PATH || '`${submissionPath}:/workdir`',
-  CUSTOM_RUN_COMMAND: process.env.CUSTOM_RUN_COMMAND
+    process.env.DOCKER_SOLUTION_MOUNT_PATH || '`${submissionPath}/code/src:/src`',
+  DOCKET_TEST_SPEC_MOUNT_PATH:
+  process.env.DOCKET_TEST_SPEC_MOUNT_PATH || '`${submissionPath}/artifacts/public:/hostlog`',
 }

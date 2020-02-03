@@ -27,14 +27,8 @@ module.exports = {
         S3_BUCKET: 'topcoder-submission-artifacts',
         PROVISIONAL_TESTING_TIMEOUT: P0000000, // Default 2 hours
         FINAL_TESTING_TIMEOUT: S0000000, // Default 2 hours
-        CHALLENGE_ID: 12345678,
 
-        PROVISIONAL_TESTER_COMMAND: '`#TESTER_COMMAND#`',
-        FINAL_TESTER_COMMAND: '`#SYS_TESTER_COMMAND#`',
-        PROVISIONAL_SOLUTION_COMMAND: '`#SOLUTION_COMMAND#`',
-        FINAL_SOLUTION_COMMAND: '`#SYS_SOLUTION_COMMAND#`',
-        DOCKER_IMAGE_NAME: '#DOCKER_IMAGE_NAME#',
-        DOCKER_SOLUTION_MOUNT_PATH: '`${submissionPath}:/workdir`',
+        DOCKER_SOLUTION_MOUNT_PATH: '`${submissionPath}/code/src:/src`',
         CUSTOM_RUN_COMMAND: '`#CUSTOM_RUN_COMMAND#`',
         NODE_ENV: 'production'
       }

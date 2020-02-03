@@ -199,7 +199,6 @@ async function zipAndUploadArtifact (
   let archive = archiver.create('zip', {})
   const token = await getM2Mtoken()
 
-  // TODO - Update path as needed
   if (fs.existsSync(`${filePath}/submission/artifacts/public`)) {
     const publicArtifact = fs.createWriteStream(
       `${filePath}/${submissionId}-${testPhase}.zip`
@@ -237,7 +236,6 @@ async function zipAndUploadArtifact (
   }
 
   // PRIVATE ARTIFACTS
-  // TODO - Update path as needed
   if (fs.existsSync(`${filePath}/submission/artifacts/private`)) {
     archive = archiver.create('zip', {})
     const privateArtifact = fs.createWriteStream(
@@ -273,27 +271,24 @@ async function zipAndUploadArtifact (
   }
 }
 
+// TODO - Function no longer called. Can be called once again perhaps when we
+// TODO - decide about the private metadata
 async function prepareMetaData (submissionPath, testPhase) {
   const metadata = {}
   metadata.testType = testPhase
 
-  // TODO - Update location of the result
-  if (fs.existsSync(`${submissionPath}/submission/output/public.csv`)) {
-    metadata.public = await csv().fromFile(
-      `${submissionPath}/submission/output/public.csv`
-    )
-  }
+  metadata.public = JSON.parse(fs.readFileSync(path.join(`${submissionPath}/submission/artifacts/public`, 'result.json'), 'utf-8'))
 
   // TODO - I am guessing the above code already took care of preparing the meta data
   // TODO - but just in case, leaving this here for now if we need to store any other type
   // TODO - of meta data
-  if (fs.existsSync(`${submissionPath}/submission/output/private.csv`)) {
-    metadata.private = await csv().fromFile(
-      `${submissionPath}/submission/output/private.csv`
-    )
-  } else {
-    metadata.private = 'This is private message'
-  }
+  // if (fs.existsSync(`${submissionPath}/submission/output/private.csv`)) {
+  //   metadata.private = await csv().fromFile(
+  //     `${submissionPath}/submission/output/private.csv`
+  //   )
+  // } else {
+  //   metadata.private = 'This is private message'
+  // }
 
   return metadata
 }
