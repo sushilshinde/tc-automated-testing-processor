@@ -113,7 +113,7 @@ async function handle (message) {
     if (fs.existsSync(resultFilePath)) {
       const resultFile = fs.readFileSync(resultFilePath, 'utf-8')
       result = JSON.parse(resultFile)
-      score = result.executionStatus === 'failed' ? 0 : 100
+      score = result.executionStatus === 'passed' ? 100 : 0
     } else {
       throw new Error('No result file available. Cannot determine score')
     }
@@ -123,7 +123,8 @@ async function handle (message) {
     // const metadata = await helper.prepareMetaData(submissionPath, testPhase)
     const metadata = {
       testType: testPhase,
-      public: result
+      public: JSON.stringify(result),
+      private: 'this is a private message'
     }
 
     logger.info(`Create Review for ${submissionId} with Score = ${score}`)
