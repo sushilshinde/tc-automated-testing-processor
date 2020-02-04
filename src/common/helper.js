@@ -3,7 +3,6 @@
  */
 const _ = require('lodash')
 const archiver = require('archiver')
-const csv = require('csvtojson')
 const fs = require('fs')
 const request = require('superagent')
 const prefix = require('superagent-prefix')
