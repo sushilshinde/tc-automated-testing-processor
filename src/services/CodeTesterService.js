@@ -27,7 +27,8 @@ module.exports.performCodeTest = async (
   submissionPath,
   customRun,
   testPhase,
-  gpuFlag
+  gpuFlag,
+  solutionLanguage
 ) => {
   try {
     submissionDirectory = path.resolve(`${submissionPath}/submission`)
@@ -108,6 +109,8 @@ module.exports.performCodeTest = async (
         )
       })
     ])
+
+    testCommand = [`${solutionLanguage}`]
 
     // Create container from test spec image
     testSpecContainerId = await Promise.race([

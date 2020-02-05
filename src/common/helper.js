@@ -310,6 +310,18 @@ async function cloneSpecAndTests (submissionId) {
   logger.info('Cloned successfully')
 }
 
+function detectSolutionLanguage (solutionPath) {
+  const fileName = 'solution'
+
+  if (fs.existsSync(path.join(solutionPath, `${fileName}.js`))) {
+    return 'javascript'
+  }
+
+  if (fs.existsSync(path.join(solutionPath, `${fileName}.py`))) {
+    return 'python'
+  }
+}
+
 module.exports = {
   getM2Mtoken,
   downloadAndUnzipFile,
@@ -322,5 +334,6 @@ module.exports = {
   getSubmission,
   zipAndUploadArtifact,
   prepareMetaData,
-  cloneSpecAndTests
+  cloneSpecAndTests,
+  detectSolutionLanguage
 }

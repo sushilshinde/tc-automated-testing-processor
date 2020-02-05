@@ -79,6 +79,9 @@ async function handle (message) {
     // Download submission
     const submissionPath = await helper.downloadAndUnzipFile(submissionId)
 
+    // Detect which language the submission is in
+    const solutionLanguage = helper.detectSolutionLanguage(`${submissionPath}/submission/code/src`)
+
     if (!fs.existsSync(`${submissionPath}/submission/artifacts/private`)) {
       logger.info('creating private artifact dir')
       await fs.mkdirSync(`${submissionPath}/submission/artifacts/private`, { recursive: true })
@@ -106,7 +109,7 @@ async function handle (message) {
     }
 
     logger.info(`Started executing CODE type of submission for ${submissionId} | ${submissionPath}`)
-    await performCodeTest(challengeId, submissionId, submissionPath, customCodeRun, testPhase, gpuFlag)
+    await performCodeTest(challengeId, submissionId, submissionPath, customCodeRun, testPhase, gpuFlag, solutionLanguage)
 
     const resultFilePath = path.join(`${submissionPath}/submission/artifacts/public/json-report`, 'result.json')
 
