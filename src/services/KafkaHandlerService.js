@@ -62,7 +62,9 @@ async function handle (message) {
   const challengeId = _.get(submission, 'challengeId')
 
   // Check if the contest associated with the submission is relevant
-  const challengeSubtrack = (await helper.getChallenge(challengeId)).subTrack
+  const challengeDetails = await helper.getChallenge(challengeId)
+  const challengeSubtrack = challengeDetails.subTrack
+  const codeRepo = challengeDetails.codeRepo
 
   if (challengeSubtrack !== config.CHALLENGE_SUB_TRACK) {
     logger.info(`Ignoring message as challenge with id - ${challengeId} is of subtrack ${challengeSubtrack}`)
@@ -70,7 +72,7 @@ async function handle (message) {
   }
 
   // Clone the test specifications
-  await helper.cloneSpecAndTests(submissionId)
+  await helper.cloneSpecAndTests(submissionId, codeRepo)
 
   try {
     // Create `review` with `status = queued` for the submission
@@ -81,6 +83,8 @@ async function handle (message) {
 
     // Detect which language the submission is in
     const solutionLanguage = helper.detectSolutionLanguage(`${submissionPath}/submission/code/src`)
+
+    logger.info(`Detected solution langauge: ${solutionLanguage}`)
 
     if (!fs.existsSync(`${submissionPath}/submission/artifacts/private`)) {
       logger.info('creating private artifact dir')

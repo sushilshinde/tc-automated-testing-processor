@@ -296,13 +296,20 @@ async function prepareMetaData (submissionPath, testPhase) {
  * Clones the specification and tests to the folder
  * where the submission will be downloaded
  * @param {String} submissionId The submission id
+ * @param {String} codeRepo The code repository to clone. Default to env var GIT_REPOSITORY_URL
  */
-async function cloneSpecAndTests (submissionId) {
+async function cloneSpecAndTests (submissionId, codeRepo) {
+  if (!codeRepo || codeRepo.length === 0) {
+    codeRepo = config.git.GIT_REPOSITORY_URL
+  }
+
+  logger.info(`Cloning test repository: ${codeRepo}`)
+
   const subPath = path.join(__dirname, '../../submissions', submissionId, 'submission', 'tests')
   logger.info(`Cloning test specification to ${subPath}`)
   await git.clone({
     dir: subPath,
-    url: config.git.GIT_REPOSITORY_URL,
+    url: codeRepo,
     singleBranch: true,
     username: config.git.GIT_USERNAME,
     password: config.git.GIT_PASSWORD
@@ -319,6 +326,10 @@ function detectSolutionLanguage (solutionPath) {
 
   if (fs.existsSync(path.join(solutionPath, `${fileName}.py`))) {
     return 'python'
+  }
+
+  if (fs.existsSync(path.join(solutionPath, `${fileName}.go`))) {
+    return 'go'
   }
 }
 
