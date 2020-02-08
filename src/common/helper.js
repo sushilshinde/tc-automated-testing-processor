@@ -318,7 +318,7 @@ async function cloneSpecAndTests (submissionId, codeRepo) {
 }
 
 function detectSolutionLanguage (solutionPath) {
-  const fileName = 'solution'
+  let fileName = 'solution'
 
   if (fs.existsSync(path.join(solutionPath, `${fileName}.js`))) {
     return 'javascript'
@@ -330,6 +330,12 @@ function detectSolutionLanguage (solutionPath) {
 
   if (fs.existsSync(path.join(solutionPath, `${fileName}.go`))) {
     return 'go'
+  }
+
+  fileName = 'Solution' // Java filename will be the class name
+
+  if (fs.existsSync(path.join(solutionPath, `${fileName}.java`))) {
+    return 'java'
   }
 }
 
