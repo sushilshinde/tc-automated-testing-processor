@@ -63,11 +63,11 @@ async function handle (message) {
 
   // Check if the contest associated with the submission is relevant
   const challengeDetails = await helper.getChallenge(challengeId)
-  const challengeSubtrack = challengeDetails.subTrack
+  const platforms = challengeDetails.platforms
   const codeRepo = challengeDetails.codeRepo
 
-  if (challengeSubtrack !== config.CHALLENGE_SUB_TRACK) {
-    logger.info(`Ignoring message as challenge with id - ${challengeId} is of subtrack ${challengeSubtrack}`)
+  if (!platforms.includes(config.CHALLENGE_PLATFORM)) {
+    logger.info(`Ignoring message as challenge with id - ${challengeId} is not of platform ${config.CHALLENGE_PLATFORM}`)
     return
   }
 

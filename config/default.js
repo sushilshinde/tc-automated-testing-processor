@@ -56,7 +56,7 @@ module.exports = {
   REVIEW_SCORECARD_ID: process.env.REVIEW_SCORECARD_ID || '30001852',
 
   // Challenge to consider for scoring
-  CHALLENGE_SUB_TRACK: process.env.CHALLENGE_SUB_TRACK || 'Automated Testing',
+  CHALLENGE_PLATFORM: process.env.CHALLENGE_PLATFORM || 'AWS',
 
   PROVISIONAL_TESTING_TIMEOUT: process.env.PROVISIONAL_TESTING_TIMEOUT ? Number(process.env.PROVISIONAL_TESTING_TIMEOUT) : 2 * 60 * 60 * 1000, // 2 Hours
   FINAL_TESTING_TIMEOUT: process.env.FINAL_TESTING_TIMEOUT ? Number(process.env.FINAL_TESTING_TIMEOUT) : 2 * 60 * 60 * 1000, // 2 Hours
