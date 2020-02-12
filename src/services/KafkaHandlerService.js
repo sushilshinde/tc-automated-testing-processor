@@ -15,8 +15,6 @@ const ReviewProducerService = require('./ReviewProducerService')
 const reviewProducer = new ReviewProducerService(config)
 
 const testConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config/phase-config.json')))
-// Only 1 phase for now
-const testPhase = 'system'
 
 /**
  * Handle Kafka message.
@@ -33,6 +31,7 @@ async function handle (message) {
   const resource = _.get(message, 'payload.resource', '')
   const typeId = _.get(message, 'payload.typeId', '')
   const reviewScore = _.get(message, 'payload.score', '')
+  const testPhase = _.get(message, 'testType', 'provisional')
 
   if (!(resource === 'review' && typeId === avScanReviewTypeId)) {
     logger.info(
@@ -146,7 +145,7 @@ async function handle (message) {
     logger.info(`Uploading artifacts for ${submissionId}`)
     await helper.zipAndUploadArtifact(filePath, submissionId, testPhase)
 
-    rimraf.sync(`${filePath}`)
+    rimraf.sync(`${filePath}/submission`)
     logger.info(`Process complete for submission: ${submissionId}`)
     logger.resetTransports()
   }

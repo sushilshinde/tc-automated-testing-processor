@@ -28,9 +28,17 @@ module.exports = {
         PROVISIONAL_TESTING_TIMEOUT: P0000000, // Default 2 hours
         FINAL_TESTING_TIMEOUT: S0000000, // Default 2 hours
 
-        DOCKER_SOLUTION_MOUNT_PATH: '`${submissionPath}/code/src:/src`',
         CUSTOM_RUN_COMMAND: '`#CUSTOM_RUN_COMMAND#`',
-        NODE_ENV: 'production'
+
+        CHALLENGE_PLATFORM: 'Automated Testing',
+
+        NODE_ENV: 'production',
+
+        TOKEN_CACHE_TIME: 86400000,
+        DOCKER_SOLUTION_MOUNT_PATH: '`${submissionPath}/code/src:/src`',
+        DOCKET_TEST_SPEC_MOUNT_PATH: '`${submissionPath}/artifacts/public:/hostlog`',
+        GIT_USERNAME: '',
+        GIT_PASSWORD: ''
       }
     }
   ]
