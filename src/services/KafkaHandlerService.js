@@ -120,7 +120,7 @@ async function handle (message) {
     if (fs.existsSync(resultFilePath)) {
       const resultFile = fs.readFileSync(resultFilePath, 'utf-8')
       result = JSON.parse(resultFile)
-      score = result.executionStatus === 'passed' ? 100 : 0
+      score = helper.getScore(result)
     } else {
       throw new Error('No result file available. Cannot determine score')
     }

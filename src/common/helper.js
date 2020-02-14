@@ -317,6 +317,10 @@ async function cloneSpecAndTests (submissionId, codeRepo) {
   logger.info('Cloned successfully')
 }
 
+/**
+ * Determines which programming language the solution is written in
+ * @param {String} solutionPath The path where the solution file exists
+ */
 function detectSolutionLanguage (solutionPath) {
   let fileName = 'solution'
 
@@ -339,6 +343,17 @@ function detectSolutionLanguage (solutionPath) {
   }
 }
 
+/**
+ * Returns the score for the given test results
+ * @param {Object} result The result json from gauge
+ */
+function getScore (result) {
+  const totalTests = result.passedScenariosCount + result.failedScenariosCount
+  const score = (result.passedScenariosCount / totalTests) * 100
+
+  return Number(score.toFixed(2))
+}
+
 module.exports = {
   getM2Mtoken,
   downloadAndUnzipFile,
@@ -352,5 +367,6 @@ module.exports = {
   zipAndUploadArtifact,
   prepareMetaData,
   cloneSpecAndTests,
-  detectSolutionLanguage
+  detectSolutionLanguage,
+  getScore
 }
