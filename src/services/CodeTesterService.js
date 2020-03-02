@@ -79,7 +79,7 @@ module.exports.performCodeTest = async (
 
     // Start user solution container
     await Promise.race([
-      executeSubmission(solutionContainerId),
+      executeSubmission(solutionContainerId, false),
       new Promise((resolve, reject) => {
         setTimeout(
           () => reject(new Error('Timeout :: Docker solution container execution')),
@@ -110,7 +110,8 @@ module.exports.performCodeTest = async (
       })
     ])
 
-    testCommand = [`${solutionLanguage}`]
+    // No test spec command any more. The tests will always be in js
+    // testCommand = [`${solutionLanguage}`]
 
     // Create container from test spec image
     testSpecContainerId = await Promise.race([
@@ -118,12 +119,13 @@ module.exports.performCodeTest = async (
         submissionId,
         testSpecImageName,
         submissionDirectory,
-        config.DOCKET_TEST_SPEC_MOUNT_PATH,
+        config.DOCKER_TEST_SPEC_MOUNT_PATH,
         testCommand,
         'solution',
         gpuFlag,
         `${submissionId}-test-spec-container`,
-        [`${solutionContainerName}:ro`]
+        null,
+        [`${solutionContainerName}:solution-container`]
       ),
       new Promise((resolve, reject) => {
         setTimeout(

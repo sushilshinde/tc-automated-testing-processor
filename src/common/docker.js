@@ -118,7 +118,8 @@ module.exports.createContainer = async (
   runner, // solution or tester
   gpuFlag = 'false',
   containerName,
-  volumesFrom = []
+  volumesFrom = [],
+  links = []
 ) => {
   try {
     logger.info(`Docker Container Creation Started for ${submissionId} with name ${containerName}`)
@@ -136,7 +137,8 @@ module.exports.createContainer = async (
           Binds: binds,
           NetworkDisabled: true,
           ReadonlyRootfs: false,
-          VolumesFrom: volumesFrom
+          VolumesFrom: volumesFrom,
+          Links: links
         },
         Cmd: testCommand,
         Tty: true
@@ -169,7 +171,7 @@ module.exports.createContainer = async (
  * @param {[string]} testingCommand String array of testing command
  * @returns {number} Score of the submission
  */
-module.exports.executeSubmission = async (containerID) => {
+module.exports.executeSubmission = async (containerID, blockUntilStop = true) => {
   try {
     // START CONTAINER
     logger.info(`Starting Docker Container ${containerID}`)
@@ -187,20 +189,22 @@ module.exports.executeSubmission = async (containerID) => {
         throw err
       })
 
-    await request
-      .post(dockerUrl + '/containers/' + containerID + '/wait', {
-        headers: {
-          host: null
-        }
-      })
-      .then(function (res) {
-        const statusCode = JSON.parse(res).StatusCode
-        if (statusCode === 0) return true
-        else Error(`Execution completed with error code ${statusCode}`)
-      })
-      .catch(function (err) {
-        throw err
-      })
+    if (blockUntilStop) {
+      await request
+        .post(dockerUrl + '/containers/' + containerID + '/wait', {
+          headers: {
+            host: null
+          }
+        })
+        .then(function (res) {
+          const statusCode = JSON.parse(res).StatusCode
+          if (statusCode === 0) return true
+          else Error(`Execution completed with error code ${statusCode}`)
+        })
+        .catch(function (err) {
+          throw err
+        })
+    }
   } catch (error) {
     logger.error(error)
     throw new Error(`Error while executing submission ${error}`)

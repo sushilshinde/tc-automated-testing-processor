@@ -81,10 +81,12 @@ async function handle (message) {
     // Download submission
     const submissionPath = await helper.downloadAndUnzipFile(submissionId)
 
+    // No longer needed - The test spec will be in js
     // Detect which language the submission is in
-    const solutionLanguage = helper.detectSolutionLanguage(`${submissionPath}/submission/code/src`)
+    // const solutionLanguage = helper.detectSolutionLanguage(`${submissionPath}/submission/code/src`)
+    const solutionLanguage = ''
 
-    logger.info(`Detected solution language: ${solutionLanguage}`)
+    // logger.info(`Detected solution language: ${solutionLanguage}`)
 
     if (!fs.existsSync(`${submissionPath}/submission/artifacts/private`)) {
       logger.info('creating private artifact dir')

@@ -18,7 +18,7 @@ GIT_REPOSITORY_URL
 # The volume to mount in the solution container (which is used eventually by test spec container)
 DOCKER_SOLUTION_MOUNT_PATH
 # The volume to mount in the test spec container (into which we store the test result json)
-DOCKET_TEST_SPEC_MOUNT_PATH
+DOCKER_TEST_SPEC_MOUNT_PATH
 
 # The git repository access credentials. Leave empty if repository is publicly available
 GIT_USERNAME
