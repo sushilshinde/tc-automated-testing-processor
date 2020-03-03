@@ -348,8 +348,29 @@ function detectSolutionLanguage (solutionPath) {
  * @param {Object} result The result json from gauge
  */
 function getScore (result) {
-  const totalTests = result.passedScenariosCount + result.failedScenariosCount
-  const score = (result.passedScenariosCount / totalTests) * 100
+  let passed = 0
+  let failed = 0
+  let notExecuted = 0
+
+  result.specResults.forEach(specResult => {
+    specResult.scenarios.forEach(scenario => {
+      scenario.items.forEach(item => {
+        switch (item.result.status) {
+          case 'passed':
+            passed += 1
+            break
+          case 'failed':
+            failed += 1
+            break
+          default:
+            notExecuted += 1
+        }
+      })
+    })
+  })
+
+  const totalTests = passed + failed + notExecuted
+  const score = (passed / totalTests) * 100
 
   return Number(score.toFixed(2))
 }
