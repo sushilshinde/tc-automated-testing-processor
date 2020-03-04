@@ -130,14 +130,15 @@ async function handle (message) {
     // TODO - Use helper once we decide about the private metadata
     // TODO - for now, we set it directly in the next statement
     // const metadata = await helper.prepareMetaData(submissionPath, testPhase)
-    const metadata = {
-      testType: testPhase,
-      public: JSON.stringify(result),
-      private: 'this is a private message'
-    }
+    // Commented out below since review api would not get updated if metadata was changed. Why? Reasons unknown...
+    // const metadata = {
+    //   testType: testPhase,
+    //   public: JSON.stringify(result),
+    //   private: 'this is a private message'
+    // }
 
     logger.info(`Create Review for ${submissionId} with Score = ${score}`)
-    await reviewProducer.createReview(submissionId, score, 'completed', metadata, reviewObject)
+    await reviewProducer.createReview(submissionId, score, 'completed', reviewObject.metadata, reviewObject)
   } catch (error) {
     logger.logFullError(error)
     logger.info('Create Review with Negative Score')
