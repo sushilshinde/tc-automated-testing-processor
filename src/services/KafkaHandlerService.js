@@ -25,6 +25,7 @@ const testPhase = 'system'
 async function handle (message) {
   let reviewObject
   let result
+  let solutionLanguage
 
   logger.info(`Kafka message: ${JSON.stringify(message, null, 2)}`)
 
@@ -81,12 +82,13 @@ async function handle (message) {
     // Download submission
     const submissionPath = await helper.downloadAndUnzipFile(submissionId)
 
-    // No longer needed - The test spec will be in js
-    // Detect which language the submission is in
-    // const solutionLanguage = helper.detectSolutionLanguage(`${submissionPath}/submission/code/src`)
-    const solutionLanguage = ''
-
-    // logger.info(`Detected solution language: ${solutionLanguage}`)
+    if (!config.UI_TEST) {
+      // Detect which language the submission is in
+      solutionLanguage = helper.detectSolutionLanguage(`${submissionPath}/submission/code/src`)
+      logger.info(`Detected solution language: ${solutionLanguage}`)
+    } else {
+      solutionLanguage = ''
+    }
 
     if (!fs.existsSync(`${submissionPath}/submission/artifacts/private`)) {
       logger.info('creating private artifact dir')

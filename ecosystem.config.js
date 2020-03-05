@@ -30,7 +30,8 @@ module.exports = {
 
         DOCKER_SOLUTION_MOUNT_PATH: '`${submissionPath}/code/src:/src`',
         CUSTOM_RUN_COMMAND: '`#CUSTOM_RUN_COMMAND#`',
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        UI_TEST: true
       }
     }
   ]
