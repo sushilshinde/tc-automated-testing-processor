@@ -1,12 +1,12 @@
 module.exports = {
   apps: [
     {
-      name: '#APP_NAME#',
+      name: 'Automated Testing',
       script: 'src/app.js',
       instances: 1,
       env: {
         KAFKA_URL: 'ssl://smooth-tricycle-01.srvs.cloudkafka.com:9093,ssl://smooth-tricycle-02.srvs.cloudkafka.com:9093,ssl://smooth-tricycle-03.srvs.cloudkafka.com:9093',
-        GROUP_CONSUMER_NAME: '#GROUP_CONSUMER_NAME#',
+        GROUP_CONSUMER_NAME: 'automated-testing-gc',
         KAFKA_CLIENT_CERT:
           '-----BEGIN CERTIFICATE-----\nMIIDKTCCAhECCQCRciVWm9ZAQjANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJz\nbW9vdGgtdHJpY3ljbGUgQ0EwHhcNMTcxMjIzMDUyMjMzWhcNMjcxMjIxMDUyMjMz\nWjCBjzELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAklMMREwDwYDVQQHDAhQYWxhdGlu\nZTERMA8GA1UECgwIVG9wY29kZXIxETAPBgNVBAsMCFByb2QvRGV2MRUwEwYDVQQD\nDAx0b3Bjb2Rlci5jb20xIzAhBgkqhkiG9w0BCQEWFG10d29tZXlAYmVha3N0YXIu\nY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0P9bydhMFMJYViPd\nvxQ8++NNLsBw/+HwgFTqVMAbtqMBnYd1oXtkzRRA0byvraC/ttq6vyUvZfs5lCX5\n7nCtVKCqjFCgqvbHuOHXciNzkYoxJTBOX3e5fXFU6wVXmrwFLYKTZBe43Jnm2e9B\nDRS+MtIKjVZo24kGy6oaQ/DD7vG0yewErDwCQMupP1qjeU120IXvp3Yj4wobXsLr\n3y4gpG7SSbXDCa72ETnzpUT7rRZ+jJCqIaqFBkBXsDOLpPOWlikiHaFv8B4kW8qP\nMhwY3rG3C4KVyOGdOdE00RNNWvDcns0AgaXCoJeJdURFpW2kt2qObEKmf5YfVdvg\nzhe0FQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQB/gLSBt6La0IJRUvrI68AgXIug\nUryvZV5uxZnxzuY8INSPY7YhLEeduPEJogxRwIezSDvKmqs47DJR/xfQmmToZT9j\nL/K6HojGtusvn1jtjB9dZPy6jozVET1XZLE/mloqZZg+d4JpjvLiheOuagCKlP4t\ncL8R1ipD+enzykEBebLGD0Z7o8yc6XNYFohnPvOX1MF1EpMssQ2ES7Eis1xJC7qo\nb7EWs1C45WBtoywMbaolFNSTC8Emg6oe0xWalHMJDc8saQ9G96YcCbbVUcEGMNH/\nF0iJ7r2JH59NOgs8O3g5Doh5BS13GJt8l/azJ6zzKfvPE8Ik0yJjUET2V++S\n-----END CERTIFICATE-----',
         KAFKA_CLIENT_CERT_KEY:
@@ -19,27 +19,24 @@ module.exports = {
         AUTH0_PROXY_SERVER_URL: 'https://auth0proxy.topcoder.com/token',
 
         SUBMISSION_API_URL: 'https://api.topcoder.com/v5',
-        CHALLENGE_API_URL: 'https://api.topcoder.com/v3',
+        CHALLENGE_API_URL: 'https://api.topcoder.com/v4',
 
-        REVIEW_TYPE_NAME: 'Marathon Match Review',
+        REVIEW_TYPE_NAME: 'Automated Testing Review',
         BUSAPI_URL: 'https://api.topcoder.com/v5/bus/events',
 
         S3_BUCKET: 'topcoder-submission-artifacts',
-        PROVISIONAL_TESTING_TIMEOUT: P0000000, // Default 2 hours
-        FINAL_TESTING_TIMEOUT: S0000000, // Default 2 hours
-
-        CUSTOM_RUN_COMMAND: '`#CUSTOM_RUN_COMMAND#`',
 
         CHALLENGE_PLATFORM: 'Automated Testing',
-
-        NODE_ENV: 'production',
-
         TOKEN_CACHE_TIME: 86400000,
+        
         DOCKER_SOLUTION_MOUNT_PATH: '`${submissionPath}/code/src:/src`',
         DOCKET_TEST_SPEC_MOUNT_PATH: '`${submissionPath}/artifacts/public:/hostlog`',
+        
         GIT_USERNAME: '',
         GIT_PASSWORD: '',
-        UI_TEST: true
+        UI_TEST: true,
+        
+        NODE_ENV: 'production'
       }
     }
   ]
