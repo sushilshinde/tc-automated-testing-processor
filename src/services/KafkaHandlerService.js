@@ -23,6 +23,7 @@ const testConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config
 async function handle (message) {
   let reviewObject
   let result
+  let solutionLanguage
 
   logger.info(`Kafka message: ${JSON.stringify(message, null, 2)}`)
 
@@ -80,10 +81,13 @@ async function handle (message) {
     // Download submission
     const submissionPath = await helper.downloadAndUnzipFile(submissionId)
 
-    // Detect which language the submission is in
-    const solutionLanguage = helper.detectSolutionLanguage(`${submissionPath}/submission/code/src`)
-
-    logger.info(`Detected solution language: ${solutionLanguage}`)
+    if (!config.UI_TEST) {
+      // Detect which language the submission is in
+      solutionLanguage = helper.detectSolutionLanguage(`${submissionPath}/submission/code/src`)
+      logger.info(`Detected solution language: ${solutionLanguage}`)
+    } else {
+      solutionLanguage = ''
+    }
 
     if (!fs.existsSync(`${submissionPath}/submission/artifacts/private`)) {
       logger.info('creating private artifact dir')
@@ -119,7 +123,7 @@ async function handle (message) {
     if (fs.existsSync(resultFilePath)) {
       const resultFile = fs.readFileSync(resultFilePath, 'utf-8')
       result = JSON.parse(resultFile)
-      score = result.executionStatus === 'passed' ? 100 : 0
+      score = helper.getScore(result)
     } else {
       throw new Error('No result file available. Cannot determine score')
     }
@@ -127,14 +131,15 @@ async function handle (message) {
     // TODO - Use helper once we decide about the private metadata
     // TODO - for now, we set it directly in the next statement
     // const metadata = await helper.prepareMetaData(submissionPath, testPhase)
-    const metadata = {
-      testType: testPhase,
-      public: JSON.stringify(result),
-      private: 'this is a private message'
-    }
+    // Commented out below since review api would not get updated if metadata was changed. Why? Reasons unknown...
+    // const metadata = {
+    //   testType: testPhase,
+    //   public: JSON.stringify(result),
+    //   private: 'this is a private message'
+    // }
 
     logger.info(`Create Review for ${submissionId} with Score = ${score}`)
-    await reviewProducer.createReview(submissionId, score, 'completed', metadata, reviewObject)
+    await reviewProducer.createReview(submissionId, score, 'completed', reviewObject.metadata, reviewObject)
   } catch (error) {
     logger.logFullError(error)
     logger.info('Create Review with Negative Score')

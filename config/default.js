@@ -63,6 +63,7 @@ module.exports = {
 
   DOCKER_SOLUTION_MOUNT_PATH:
     process.env.DOCKER_SOLUTION_MOUNT_PATH || '`${submissionPath}/code/src:/src`',
-  DOCKET_TEST_SPEC_MOUNT_PATH:
-  process.env.DOCKET_TEST_SPEC_MOUNT_PATH || '`${submissionPath}/artifacts/public:/hostlog`'
+  DOCKER_TEST_SPEC_MOUNT_PATH:
+  process.env.DOCKER_TEST_SPEC_MOUNT_PATH || '`${submissionPath}/artifacts/public:/hostlog`',
+  UI_TEST: process.env.UI_TEST || true
 }

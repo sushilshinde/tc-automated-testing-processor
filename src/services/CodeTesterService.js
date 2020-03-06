@@ -37,6 +37,8 @@ module.exports.performCodeTest = async (
     let logPath = `${submissionDirectory}/artifacts/public/solution-docker-image-build.log`
     solutionImageName = `${submissionId}-solution-image`
     let solutionContainerName = `${submissionId}-solution-container`
+    let volumesFrom = null
+    let links = null
 
     // Build image from user solution
     await Promise.race([
@@ -79,7 +81,7 @@ module.exports.performCodeTest = async (
 
     // Start user solution container
     await Promise.race([
-      executeSubmission(solutionContainerId),
+      executeSubmission(solutionContainerId, !config.UI_TEST),
       new Promise((resolve, reject) => {
         setTimeout(
           () => reject(new Error('Timeout :: Docker solution container execution')),
@@ -110,7 +112,12 @@ module.exports.performCodeTest = async (
       })
     ])
 
-    testCommand = [`${solutionLanguage}`]
+    if (!config.UI_TEST) {
+      testCommand = [`${solutionLanguage}`]
+      volumesFrom = [`${solutionContainerName}:ro`]
+    } else {
+      links = [`${solutionContainerName}:solution-container`]
+    }
 
     // Create container from test spec image
     testSpecContainerId = await Promise.race([
@@ -118,12 +125,13 @@ module.exports.performCodeTest = async (
         submissionId,
         testSpecImageName,
         submissionDirectory,
-        config.DOCKET_TEST_SPEC_MOUNT_PATH,
+        config.DOCKER_TEST_SPEC_MOUNT_PATH,
         testCommand,
         'solution',
         gpuFlag,
         `${submissionId}-test-spec-container`,
-        [`${solutionContainerName}:ro`]
+        volumesFrom,
+        links
       ),
       new Promise((resolve, reject) => {
         setTimeout(

@@ -38,7 +38,8 @@ module.exports = {
         DOCKER_SOLUTION_MOUNT_PATH: '`${submissionPath}/code/src:/src`',
         DOCKET_TEST_SPEC_MOUNT_PATH: '`${submissionPath}/artifacts/public:/hostlog`',
         GIT_USERNAME: '',
-        GIT_PASSWORD: ''
+        GIT_PASSWORD: '',
+        UI_TEST: true
       }
     }
   ]
