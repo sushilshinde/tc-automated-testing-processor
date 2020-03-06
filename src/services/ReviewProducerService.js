@@ -40,8 +40,7 @@ class ReviewProducerService {
         metadata,
         typeId: reviewTypeId,
         score,
-        status,
-        legacyReviewId: 1 // Dummy value for now
+        status
       })).body
   }
 
@@ -56,8 +55,7 @@ class ReviewProducerService {
         metadata,
         typeId,
         score,
-        status,
-        legacyReviewId: 1 // Dummy value for now
+        status
       })).body
   }
 
