@@ -118,7 +118,11 @@ async function handle (message) {
     logger.info(`Started executing CODE type of submission for ${submissionId} | ${submissionPath}`)
     await performCodeTest(challengeId, submissionId, submissionPath, customCodeRun, testPhase, gpuFlag, solutionLanguage)
 
-    const resultFilePath = path.join(`${submissionPath}/submission/artifacts/public/json-report`, 'result.json')
+    // For Taiko / Gauge, uncomment below and comment others
+    // const resultFilePath = path.join(`${submissionPath}/submission/artifacts/public/json-report`, 'result.json')
+
+    // For selenium, uncomment below and comment others
+    const resultFilePath = path.join(`${submissionPath}/submission/artifacts/public`, 'results.json')
 
     if (fs.existsSync(resultFilePath)) {
       const resultFile = fs.readFileSync(resultFilePath, 'utf-8')

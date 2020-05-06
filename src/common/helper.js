@@ -350,27 +350,63 @@ function detectSolutionLanguage (solutionPath) {
 function getScore (result) {
   let passed = 0
   let failed = 0
-  let notExecuted = 0
 
-  result.specResults.forEach(specResult => {
-    specResult.scenarios.forEach(scenario => {
-      scenario.items.forEach(item => {
-        switch (item.result.status) {
-          case 'passed':
-            passed += 1
-            break
-          case 'failed':
-            failed += 1
-            break
-          default:
-            notExecuted += 1
+  /**
+   * Taiko / Gauge scoring logic BEGIN
+   */
+  // let notExecuted = 0
+  // result.specResults.forEach(specResult => {
+  //   specResult.scenarios.forEach(scenario => {
+  //     scenario.items.forEach(item => {
+  //       switch (item.result.status) {
+  //         case 'passed':
+  //           passed += 1
+  //           break
+  //         case 'failed':
+  //           failed += 1
+  //           break
+  //         default:
+  //           notExecuted += 1
+  //       }
+  //     })
+  //   })
+  // })
+
+  // const totalTests = passed + failed + notExecuted
+  /**
+   * Taiko / Gauge scoring logic END
+   */
+
+  /**
+   * Selenium scoring logic BEGIN
+   */
+  for (let i = 0; i < result.length; i++) {
+    const feature = result[i]
+
+    for (let j = 0; j < feature.elements.length; j++) {
+      const scenario = feature.elements[j]
+      let notPassed = false
+
+      for (let k = 0; k < scenario.steps.length; k++) {
+        if (scenario.steps[k].result.status !== 'passed') {
+          notPassed = true
+          break
         }
-      })
-    })
-  })
+      }
 
-  const totalTests = passed + failed + notExecuted
-  const score = (passed / totalTests) * 100
+      if (notPassed) {
+        failed += 1
+      } else {
+        passed += 1
+      }
+    }
+  }
+  const totalTests = passed + failed
+  /**
+   * Selenium scoring logic END
+   */
+
+  let score = (passed / totalTests) * 100
 
   return Number(score.toFixed(2))
 }
