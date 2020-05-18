@@ -5,6 +5,7 @@
 const path = require('path')
 const config = require('config')
 const logger = require('../common/logger')
+const helper = require('../common/helper')
 
 const {
   buildDockerImage,
@@ -81,7 +82,7 @@ module.exports.performCodeTest = async (
 
     // Start user solution container
     await Promise.race([
-      executeSubmission(solutionContainerId, !config.UI_TEST),
+      executeSubmission(solutionContainerId, !helper.isUiTesting()),
       new Promise((resolve, reject) => {
         setTimeout(
           () => reject(new Error('Timeout :: Docker solution container execution')),
@@ -112,7 +113,7 @@ module.exports.performCodeTest = async (
       })
     ])
 
-    if (!config.UI_TEST) {
+    if (!helper.isUiTesting()) {
       testCommand = [`${solutionLanguage}`]
       volumesFrom = [`${solutionContainerName}:ro`]
     } else {

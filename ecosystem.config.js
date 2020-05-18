@@ -28,14 +28,15 @@ module.exports = {
 
         CHALLENGE_PLATFORM: 'Automated Testing',
         TOKEN_CACHE_TIME: 86400000,
-        
+
         DOCKER_SOLUTION_MOUNT_PATH: '`${submissionPath}/code/src:/src`',
         DOCKET_TEST_SPEC_MOUNT_PATH: '`${submissionPath}/artifacts/public:/hostlog`',
-        
+
         GIT_USERNAME: '',
         GIT_PASSWORD: '',
-        UI_TEST: true,
-        
+
+        TESTING_FRAMEWORK: '',
+
         NODE_ENV: 'production'
       }
     }
