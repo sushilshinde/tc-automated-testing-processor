@@ -17,6 +17,7 @@ const logger = require('./logger')
 const streamifier = require('streamifier')
 const git = require('isomorphic-git')
 git.plugins.set('fs', fs)
+const Const = require('../constants')
 
 // Variable to cache reviewTypes from Submission API
 const reviewTypes = {}
@@ -351,64 +352,81 @@ function getScore (result) {
   let passed = 0
   let failed = 0
 
-  /**
-   * Taiko / Gauge scoring logic BEGIN
-   */
-  // let notExecuted = 0
-  // result.specResults.forEach(specResult => {
-  //   specResult.scenarios.forEach(scenario => {
-  //     scenario.items.forEach(item => {
-  //       switch (item.result.status) {
-  //         case 'passed':
-  //           passed += 1
-  //           break
-  //         case 'failed':
-  //           failed += 1
-  //           break
-  //         default:
-  //           notExecuted += 1
-  //       }
-  //     })
-  //   })
-  // })
+  let notExecuted = 0
+  let totalTests = 0
 
-  // const totalTests = passed + failed + notExecuted
-  /**
-   * Taiko / Gauge scoring logic END
-   */
+  if (isTestFramework([Const.testingFrameworks.taiko, Const.testingFrameworks.gauge])) {
+    result.specResults.forEach(specResult => {
+      specResult.scenarios.forEach(scenario => {
+        scenario.items.forEach(item => {
+          switch (item.result.status) {
+            case 'passed':
+              passed += 1
+              break
+            case 'failed':
+              failed += 1
+              break
+            default:
+              notExecuted += 1
+          }
+        })
+      })
+    })
+    totalTests = passed + failed + notExecuted
+  } else {
+    // for selenium based testing
+    for (let i = 0; i < result.length; i++) {
+      const feature = result[i]
 
-  /**
-   * Selenium scoring logic BEGIN
-   */
-  for (let i = 0; i < result.length; i++) {
-    const feature = result[i]
+      for (let j = 0; j < feature.elements.length; j++) {
+        const scenario = feature.elements[j]
+        let notPassed = false
 
-    for (let j = 0; j < feature.elements.length; j++) {
-      const scenario = feature.elements[j]
-      let notPassed = false
+        for (let k = 0; k < scenario.steps.length; k++) {
+          if (scenario.steps[k].result.status !== 'passed') {
+            notPassed = true
+            break
+          }
+        }
 
-      for (let k = 0; k < scenario.steps.length; k++) {
-        if (scenario.steps[k].result.status !== 'passed') {
-          notPassed = true
-          break
+        if (notPassed) {
+          failed += 1
+        } else {
+          passed += 1
         }
       }
-
-      if (notPassed) {
-        failed += 1
-      } else {
-        passed += 1
-      }
     }
+    totalTests = passed + failed
   }
-  const totalTests = passed + failed
-  /**
-   * Selenium scoring logic END
-   */
 
   let score = (passed / totalTests) * 100
 
   return Number(score.toFixed(2))
+}
+
+/**
+ * Determine if we are carrying out UI testing or backend testing
+ */
+function isUiTesting () {
+  switch (config.TESTING_FRAMEWORK) {
+    case Const.testingFrameworks.selenium:
+    case Const.testingFrameworks.taiko:
+      return true
+    default:
+      return false
+  }
+}
+
+/**
+ * Checks if the provided testing framework is the one configured
+ * @param {String|Array} framework The expected test framework(s)
+ */
+function isTestFramework (framework) {
+  if (_.isArray(framework)) {
+    return framework.includes(config.TESTING_FRAMEWORK)
+  }
+
+  return config.TESTING_FRAMEWORK === framework
 }
 
 module.exports = {
@@ -425,5 +443,7 @@ module.exports = {
   prepareMetaData,
   cloneSpecAndTests,
   detectSolutionLanguage,
-  getScore
+  getScore,
+  isUiTesting,
+  isTestFramework
 }

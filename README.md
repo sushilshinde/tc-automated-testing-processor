@@ -27,6 +27,9 @@ GIT_PASSWORD
 # Only challenges under this track will be considered. Default value is 'Automated Testing'
 CHALLENGE_SUB_TRACK
 
+# Which test framework is being used. Currently supported values are 'selenium', 'taiko' and 'gauge'
+TESTING_FRAMEWORK
+
 # AWS details to store assets (artifacts, logs etc)
 AWS_REGION
 S3_BUCKET

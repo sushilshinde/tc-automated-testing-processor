@@ -12,6 +12,7 @@ const logger = require('../common/logger')
 
 const { performCodeTest } = require('./CodeTesterService')
 const ReviewProducerService = require('./ReviewProducerService')
+const Const = require('../constants')
 const reviewProducer = new ReviewProducerService(config)
 
 const testConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config/phase-config.json')))
@@ -24,6 +25,7 @@ async function handle (message) {
   let reviewObject
   let result
   let solutionLanguage
+  let resultFilePath
 
   logger.info(`Kafka message: ${JSON.stringify(message, null, 2)}`)
 
@@ -81,7 +83,7 @@ async function handle (message) {
     // Download submission
     const submissionPath = await helper.downloadAndUnzipFile(submissionId)
 
-    if (!config.UI_TEST) {
+    if (!helper.isUiTesting()) {
       // Detect which language the submission is in
       solutionLanguage = helper.detectSolutionLanguage(`${submissionPath}/submission/code/src`)
       logger.info(`Detected solution language: ${solutionLanguage}`)
@@ -118,11 +120,12 @@ async function handle (message) {
     logger.info(`Started executing CODE type of submission for ${submissionId} | ${submissionPath}`)
     await performCodeTest(challengeId, submissionId, submissionPath, customCodeRun, testPhase, gpuFlag, solutionLanguage)
 
-    // For Taiko / Gauge, uncomment below and comment others
-    // const resultFilePath = path.join(`${submissionPath}/submission/artifacts/public/json-report`, 'result.json')
-
-    // For selenium, uncomment below and comment others
-    const resultFilePath = path.join(`${submissionPath}/submission/artifacts/public`, 'results.json')
+    if (helper.isTestFramework([Const.testingFrameworks.taiko, Const.testingFrameworks.gauge])) {
+      resultFilePath = path.join(`${submissionPath}/submission/artifacts/public/json-report`, 'result.json')
+    } else {
+      // for selenium based testing
+      resultFilePath = path.join(`${submissionPath}/submission/artifacts/public`, 'results.json')
+    }
 
     if (fs.existsSync(resultFilePath)) {
       const resultFile = fs.readFileSync(resultFilePath, 'utf-8')

@@ -58,12 +58,14 @@ module.exports = {
   // Challenge to consider for scoring
   CHALLENGE_PLATFORM: process.env.CHALLENGE_PLATFORM || 'AWS',
 
+  // Currently supports 'taiko', 'gauge' and 'selenium'
+  TESTING_FRAMEWORK: process.env.TESTING_FRAMEWORK,
+
   PROVISIONAL_TESTING_TIMEOUT: process.env.PROVISIONAL_TESTING_TIMEOUT ? Number(process.env.PROVISIONAL_TESTING_TIMEOUT) : 60000, // 2 Hours
   FINAL_TESTING_TIMEOUT: process.env.FINAL_TESTING_TIMEOUT ? Number(process.env.FINAL_TESTING_TIMEOUT) : 2 * 60 * 60 * 1000, // 2 Hours
 
   DOCKER_SOLUTION_MOUNT_PATH:
     process.env.DOCKER_SOLUTION_MOUNT_PATH || '`${submissionPath}/code/src:/src`',
   DOCKER_TEST_SPEC_MOUNT_PATH:
-  process.env.DOCKER_TEST_SPEC_MOUNT_PATH || '`${submissionPath}/artifacts/public:/hostlog`',
-  UI_TEST: process.env.UI_TEST || true
+  process.env.DOCKER_TEST_SPEC_MOUNT_PATH || '`${submissionPath}/artifacts/public:/hostlog`'
 }
