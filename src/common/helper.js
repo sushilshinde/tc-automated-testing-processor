@@ -108,18 +108,31 @@ function getV4Api (token) {
 }
 
 /**
+ * Helper function returning prepared superagent instance for using with v5 challenge API.
+ * @param {String} token M2M token value
+ * @returns {Object} superagent instance configured with Authorization header and API url prefix
+ */
+function getV5Api (token) {
+  return request
+    .agent()
+    .use(prefix(config.CHALLENGE_API_V5_URL))
+    .set('Authorization', `Bearer ${token}`)
+}
+
+/**
  * Function to get challenge description by its id
  * @param {String} challengeId challenge id
  * @returns {Object} challenge description
  */
 async function getChallenge (challengeId) {
   const token = await getM2Mtoken()
-  const response = await getV4Api(token)
+  console.log(`fetching challenge detail from v5 challenge API using legacy id: ${challengeId}`)
+  const response = await getV5Api(token)
     .get('/challenges')
     .query({
-      filter: `id=${challengeId}`
+      legacyId: challengeId
     })
-  const content = _.get(response.body, 'result.content[0]')
+  const content = _.get(response.body, '[0]')
   if (content) {
     return content
   }

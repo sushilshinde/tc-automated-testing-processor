@@ -47,6 +47,7 @@ module.exports = {
   // API endpoints
   SUBMISSION_API_URL: process.env.SUBMISSION_API_URL || 'https://api.topcoder-dev.com/v5',
   CHALLENGE_API_URL: process.env.CHALLENGE_API_URL || 'https://api.topcoder-dev.com/v4',
+  CHALLENGE_API_V5_URL: process.env.CHALLENGE_API_V5_URL || 'https://api.topcoder-dev.com/v5',
   BUSAPI_URL: process.env.BUSAPI_URL || 'https://api.topcoder-dev.com/v5/bus/events',
 
   // Review options
@@ -56,7 +57,7 @@ module.exports = {
   REVIEW_SCORECARD_ID: process.env.REVIEW_SCORECARD_ID || '30001852',
 
   // Challenge to consider for scoring
-  CHALLENGE_PLATFORM: process.env.CHALLENGE_PLATFORM || 'AWS',
+  CHALLENGE_PLATFORM: process.env.CHALLENGE_PLATFORM || 'Automated Testing',
 
   // Currently supports 'taiko', 'gauge' and 'selenium'
   TESTING_FRAMEWORK: process.env.TESTING_FRAMEWORK,
