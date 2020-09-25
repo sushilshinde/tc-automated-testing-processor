@@ -20,6 +20,8 @@ module.exports = {
 
         SUBMISSION_API_URL: 'https://api.topcoder.com/v5',
         CHALLENGE_API_URL: 'https://api.topcoder.com/v4',
+        CHALLENGE_API_V5_URL: 'https://api.topcoder.com/v5',
+
 
         REVIEW_TYPE_NAME: 'Automated Testing Review',
         BUSAPI_URL: 'https://api.topcoder.com/v5/bus/events',

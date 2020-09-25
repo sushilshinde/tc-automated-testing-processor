@@ -132,7 +132,8 @@ async function getChallenge (challengeId) {
     .query({
       legacyId: challengeId
     })
-  const content = _.get(response.body, '[0]')
+
+    const content = _.get(response.body, '[0]')
   if (content) {
     return content
   }
