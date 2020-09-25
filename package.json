@@ -33,7 +33,7 @@
     "get-parameter-names": "^0.3.0",
     "isomorphic-git": "^0.78.2",
     "joi": "^14.0.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "no-kafka": "^3.4.3",
     "request-promise": "^4.2.4",
     "rimraf": "^2.6.3",
